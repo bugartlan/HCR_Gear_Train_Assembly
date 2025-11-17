@@ -147,6 +147,7 @@ class ObservationsCfg:
         # observation terms (order preserved)
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
+        # TODO: make this a command
         hole_position = ObsTerm(func=mdp.hole_position_in_robot_root_frame)
         actions = ObsTerm(func=mdp.last_action)
 
@@ -168,7 +169,7 @@ class EventCfg:
 
     # TODO: maybe initialize the arm to be above the hole?
 
-    peg_reset = EventTerm(func=mdp.reset_peg_in_hand, mode="reset", params={})
+    reset_peg = EventTerm(func=mdp.reset_peg_in_hand, mode="reset", params={})
 
     close_gripper = EventTerm(
         func=mdp.reset_joints_selected,

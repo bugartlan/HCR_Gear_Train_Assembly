@@ -64,9 +64,9 @@ def position_z_error(
     alignment_error = 1 - torch.cosine_similarity(peg_rz_w, hole_rz_w, dim=1).pow(2)
 
     if kernel == "tanh":
-        reward = 1 - torch.tanh(z_error / std_z**2)
+        reward = 1 - torch.tanh(-z_error / std_z**2)
     else:
-        reward = torch.exp(-z_error / std_z**2)
+        reward = torch.exp(z_error / std_z**2)
     return (
         torch.exp(-xy_error / std_xy**2)
         * torch.exp(-alignment_error / std_rz**2)
