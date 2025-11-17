@@ -4,6 +4,26 @@ from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import FrameTransformer
 
+from .utils import is_inserted
+
+
+def success(
+    env: ManagerBasedRLEnv,
+    location_threshold: float = 0.001,
+    hole_offset: list[float] = [0.0, 0.0, 0.0],
+    peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
+    hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
+) -> torch.Tensor:
+    """Reward the agent for successful peg insertion."""
+    peg: FrameTransformer = env.scene[peg_cfg.name]
+    hole: RigidObject = env.scene[hole_cfg.name]
+
+    hole_pos_w = hole.data.root_pos_w + torch.tensor(
+        hole_offset, device=hole.data.root_pos_w.device
+    )
+    peg_w = peg.data.target_pos_w[:, 0, :]
+    return is_inserted(peg_w, hole_pos_w, threshold=location_threshold)
+
 
 def peg_dropping(
     env: ManagerBasedRLEnv,

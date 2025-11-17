@@ -14,8 +14,28 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import FrameTransformer
 from isaaclab.utils.math import matrix_from_quat
 
+from .utils import is_inserted
+
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
+
+
+def peg_insertion_success(
+    env: ManagerBasedRLEnv,
+    location_threshold: float = 0.001,
+    hole_offset: list[float] = [0.0, 0.0, 0.0],
+    peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
+    hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
+) -> torch.Tensor:
+    """Reward the agent for successful peg insertion."""
+    peg: FrameTransformer = env.scene[peg_cfg.name]
+    hole: RigidObject = env.scene[hole_cfg.name]
+
+    hole_pos_w = hole.data.root_pos_w + torch.tensor(
+        hole_offset, device=hole.data.root_pos_w.device
+    )
+    peg_w = peg.data.target_pos_w[:, 0, :]
+    return is_inserted(peg_w, hole_pos_w, threshold=location_threshold).float()
 
 
 def position_xy_error(
@@ -67,6 +87,13 @@ def position_z_error(
         reward = 1 - torch.tanh(-z_error / std_z**2)
     else:
         reward = torch.exp(z_error / std_z**2)
+
+    # print("xy error:", xy_error)
+    # print("xy error coefficient:", torch.exp(-xy_error / std_xy**2))
+    # print("alignment error:", alignment_error)
+    # print("alignment error coefficient:", torch.exp(-alignment_error / std_rz**2))
+    # print("z error:", z_error)
+    # print("insertion reward:", reward)
     return (
         torch.exp(-xy_error / std_xy**2)
         * torch.exp(-alignment_error / std_rz**2)
@@ -76,6 +103,8 @@ def position_z_error(
 
 def orientation_error(
     env: ManagerBasedRLEnv,
+    std: float = 1.0,
+    kernel: str = "exp",
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg"),
     hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
 ) -> torch.Tensor:
@@ -87,7 +116,19 @@ def orientation_error(
     # Hole z-axis in world frame: (num_envs, 3)
     hole_z_w = matrix_from_quat(hole.data.root_quat_w)[:, :, 2]
 
-    return torch.cosine_similarity(peg_z_w, hole_z_w, dim=1).pow(2)
+    cos_error = -torch.cosine_similarity(peg_z_w, hole_z_w, dim=1)
+    # print("cos error:", cos_error)
+    rad_error = torch.acos(cos_error)
+    # print("rad error:", rad_error)
+
+    if kernel == "tanh":
+        return 1 - torch.tanh(rad_error.pow(2) / std**2)
+    elif kernel == "exp":
+        return torch.exp(-rad_error.pow(2) / std**2)
+    else:
+        return F.relu(1 - rad_error.pow(2) / std**2)
+
+    # return torch.cosine_similarity(peg_z_w, hole_z_w, dim=1).pow(2)
 
 
 def peg_hole_horizontal_distance(

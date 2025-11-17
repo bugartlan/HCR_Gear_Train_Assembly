@@ -131,7 +131,7 @@ class ActionsCfg:
             "wrist_2_joint",
             "wrist_3_joint",
         ],
-        scale=0.1,
+        scale=0.5,
         use_default_offset=True,
     )
 
@@ -195,26 +195,38 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    peg_orientation_tracking = RewTerm(func=mdp.orientation_error, weight=1.0)
+    peg_orientation_tracking = RewTerm(
+        func=mdp.orientation_error, weight=0.5, params={"std": 1.0, "kernel": "tanh"}
+    )
+
+    peg_orientation_tracking_fine_grained = RewTerm(
+        func=mdp.orientation_error, weight=1.0, params={"std": 0.25, "kernel": "tanh"}
+    )
 
     peg_position_xy_tracking = RewTerm(
         func=mdp.position_xy_error, weight=1.0, params={"std": 0.25, "kernel": "exp"}
     )
 
     peg_position_xy_tracking_fine_grained = RewTerm(
-        func=mdp.position_xy_error, weight=2.0, params={"std": 0.1, "kernel": "tanh"}
+        func=mdp.position_xy_error, weight=1.5, params={"std": 0.1, "kernel": "tanh"}
     )
 
     peg_position_z_tracking = RewTerm(
         func=mdp.position_z_error,
-        weight=3.0,
+        weight=2.0,
         params={"std_xy": 0.1, "std_z": 0.2, "std_rz": 0.5, "kernel": "exp"},
     )
 
     peg_position_z_tracking_fine_grained = RewTerm(
         func=mdp.position_z_error,
-        weight=4.0,
+        weight=10.0,
         params={"std_xy": 0.1, "std_z": 0.1, "std_rz": 0.5, "kernel": "tanh"},
+    )
+
+    task_success_bonus = RewTerm(
+        func=mdp.peg_insertion_success,
+        weight=1000.0,
+        params={"location_threshold": 0.0002},
     )
 
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
@@ -234,7 +246,7 @@ class TerminationsCfg:
 
     peg_dropping = DoneTerm(func=mdp.peg_dropping, params={"threshold": 0.1})
 
-    # TODO: terminate when peg is inserted into hole
+    success = DoneTerm(func=mdp.success, params={"location_threshold": 0.0002})
 
 
 @configclass
