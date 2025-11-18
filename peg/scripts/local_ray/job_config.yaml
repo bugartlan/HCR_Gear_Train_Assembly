@@ -1,11 +1,11 @@
 # File containing environment variables (e.g. W&B credentials)
 # e.g. /path/to/so101_isaac/scripts/local_ray/.env.ray
-env_file: "/Users/bugart/UT/so101_isaac/scripts/local_ray/.env.ray"
+env_file: "/Users/bugart/UT/HCR_Gear_Train_Assembly/peg/scripts/local_ray/.env.ray"
 # UT EID (for tracking ownership of Ray jobs)
 user_id: yl43338
 # Working directory during job, should contain your scripts
 # e.g. /path/to/so101_isaac/scripts
-ext_dir: "/Users/bugart/UT/so101_isaac/scripts"
+ext_dir: "/Users/bugart/UT/HCR_Gear_Train_Assembly/peg/scripts"
 # Train script to execute on cluster
 python_script: "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/so101_isaac/scripts/train.py"
 # Additional dependencies to mount at runtime (will also auto-install module dependencies if setup.py is present at root level)
@@ -14,7 +14,7 @@ python_script: "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager
 file_mounts: {
   # e.g. "/path/to/so101_isaac": "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/so101_isaac"
   #      "/path/to/robot_rl": "/workspace/isaaclab/source/robot_rl"
-  "/Users/bugart/UT/so101_isaac": "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/so101_isaac",
+  "/Users/bugart/UT/HCR_Gear_Train_Assembly/peg": "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/so101_isaac",
   "/Users/bugart/UT/robot_rl": "/workspace/isaaclab/source/robot_rl"
 }
 # Commands to execute after mounting runtime dependencies but before installation

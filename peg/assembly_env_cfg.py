@@ -17,7 +17,8 @@ from isaaclab.markers.config import FRAME_MARKER_CFG
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
-from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
+from isaaclab.sim.spawners.from_files.from_files_cfg import (GroundPlaneCfg,
+                                                             UsdFileCfg)
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
@@ -196,11 +197,11 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     peg_orientation_tracking = RewTerm(
-        func=mdp.orientation_error, weight=0.5, params={"std": 1.0, "kernel": "tanh"}
+        func=mdp.orientation_error, weight=1.0, params={"std": 1.0, "kernel": "tanh"}
     )
 
     peg_orientation_tracking_fine_grained = RewTerm(
-        func=mdp.orientation_error, weight=1.0, params={"std": 0.25, "kernel": "tanh"}
+        func=mdp.orientation_error, weight=2.0, params={"std": 0.25, "kernel": "tanh"}
     )
 
     peg_position_xy_tracking = RewTerm(
@@ -208,19 +209,19 @@ class RewardsCfg:
     )
 
     peg_position_xy_tracking_fine_grained = RewTerm(
-        func=mdp.position_xy_error, weight=1.5, params={"std": 0.1, "kernel": "tanh"}
+        func=mdp.position_xy_error, weight=2.0, params={"std": 0.1, "kernel": "tanh"}
     )
 
     peg_position_z_tracking = RewTerm(
         func=mdp.position_z_error,
-        weight=2.0,
-        params={"std_xy": 0.1, "std_z": 0.2, "std_rz": 0.5, "kernel": "exp"},
+        weight=4.0,
+        params={"std_xy": 0.1, "std_z": 0.2, "std_rz": 0.25, "kernel": "exp"},
     )
 
     peg_position_z_tracking_fine_grained = RewTerm(
         func=mdp.position_z_error,
         weight=10.0,
-        params={"std_xy": 0.1, "std_z": 0.1, "std_rz": 0.5, "kernel": "tanh"},
+        params={"std_xy": 0.1, "std_z": 0.1, "std_rz": 0.25, "kernel": "tanh"},
     )
 
     task_success_bonus = RewTerm(

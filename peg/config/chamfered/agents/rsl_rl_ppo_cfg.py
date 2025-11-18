@@ -4,12 +4,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from isaaclab.utils import configclass
-from isaaclab_rl.rsl_rl import (
-    RslRlOnPolicyRunnerCfg,
-    RslRlPpoActorCriticCfg,
-    RslRlPpoActorCriticRecurrentCfg,
-    RslRlPpoAlgorithmCfg,
-)
+from isaaclab_rl.rsl_rl import (RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg,
+                                RslRlPpoActorCriticRecurrentCfg,
+                                RslRlPpoAlgorithmCfg)
 
 
 @configclass
@@ -18,6 +15,14 @@ class PegInsertPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     max_iterations = 2000
     save_interval = 50
     experiment_name = "ur3e_chamfered_peg_insert"
+    wandb_project = "UR3e-Chamfered-Peg-Insertion"
+    run_name = ""
+    logger = "wandb"
+    store_code_state = True
+    obs_groups = {
+        "policy": ["policy"],
+        "critic": ["policy"],
+    }
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,
         actor_obs_normalization=True,
