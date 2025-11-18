@@ -6,6 +6,7 @@
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
+# from isaaclab.envs.common import ViewerCfg
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
@@ -274,6 +275,9 @@ class CurriculumCfg:
 class AssemblyEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
     scene: AssemblySceneCfg = AssemblySceneCfg(num_envs=4096, env_spacing=4.0)
+    # viewer: ViewerCfg = ViewerCfg(
+    #     eye=(1.0, -1.0, 0.5), origin_type="asset_root", asset_name="robot"
+    # )
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()

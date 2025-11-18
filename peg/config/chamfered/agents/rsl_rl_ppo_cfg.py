@@ -12,7 +12,7 @@ from isaaclab_rl.rsl_rl import (RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg,
 @configclass
 class PegInsertPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 32
-    max_iterations = 2000
+    max_iterations = 3000
     save_interval = 50
     experiment_name = "ur3e_chamfered_peg_insert"
     wandb_project = "UR3e-Chamfered-Peg-Insertion"
