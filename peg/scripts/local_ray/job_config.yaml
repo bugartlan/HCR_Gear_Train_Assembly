@@ -7,14 +7,14 @@ user_id: yl43338
 # e.g. /path/to/so101_isaac/scripts
 ext_dir: "/Users/bugart/UT/HCR_Gear_Train_Assembly/peg/scripts"
 # Train script to execute on cluster
-python_script: "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/so101_isaac/scripts/train.py"
+python_script: "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/geartrain/scripts/train.py"
 # Additional dependencies to mount at runtime (will also auto-install module dependencies if setup.py is present at root level)
 # Base environment on cluster only has the barebones Isaac Lab installation, so you will need to add custom extensions,
 #   like so101_isaac, robot_rl, etc.
 file_mounts: {
   # e.g. "/path/to/so101_isaac": "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/so101_isaac"
   #      "/path/to/robot_rl": "/workspace/isaaclab/source/robot_rl"
-  "/Users/bugart/UT/HCR_Gear_Train_Assembly/peg": "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/so101_isaac",
+  "/Users/bugart/UT/HCR_Gear_Train_Assembly/peg": "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/geartrain",
   "/Users/bugart/UT/robot_rl": "/workspace/isaaclab/source/robot_rl"
 }
 # Commands to execute after mounting runtime dependencies but before installation

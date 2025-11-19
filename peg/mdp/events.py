@@ -43,7 +43,7 @@ def reset_peg_in_hand(
     env: ManagerBasedRLEnv,
     env_ids: torch.Tensor,
     tf_pos: list = [0.0, 0.0, 0.0],
-    tf_quat: list = [0.7071, 0.0, 0.0, 0.7071],
+    tf_quat: list = [0.707, 0.0, 0.0, 0.707],
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg"),
     ee_frame_cfg: SceneEntityCfg = SceneEntityCfg("ee_frame"),
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -74,5 +74,4 @@ def reset_peg_in_hand(
         ),
     )
     root[:, 7:] = 0.0  # zero velocity
-
     peg.write_root_state_to_sim(root[env_ids], env_ids=env_ids)

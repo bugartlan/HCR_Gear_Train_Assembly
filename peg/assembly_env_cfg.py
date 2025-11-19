@@ -3,9 +3,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+
+from dataclasses import MISSING
+
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
+from isaaclab.envs.common import ViewerCfg
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
@@ -23,14 +27,14 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 from . import mdp
-from .assets import UR3e_ROBOTIQ_GRIPPER_CFG, custom_hole, custom_peg
+from .assets import ROBOTIQ_GRIPPER_CENTER_OFFSET, UR3e_ROBOTIQ_GRIPPER_CFG
 
 ##
 # Scene definition
 ##
 
 marker_cfg = FRAME_MARKER_CFG.copy()
-marker_cfg.markers["frame"].scale = (0.1, 0.1, 0.1)
+marker_cfg.markers["frame"].scale = (0.05, 0.05, 0.05)
 marker_cfg.prim_path = "/Visuals/FrameTransformer"
 
 
@@ -45,41 +49,27 @@ class AssemblySceneCfg(InteractiveSceneCfg):
         prim_path="{ENV_REGEX_NS}/Robot"
     )
 
+    # end effector frame
     ee_frame: FrameTransformerCfg = FrameTransformerCfg(
         prim_path="{ENV_REGEX_NS}/Robot/ur3e/base_link",
-        debug_vis=True,
-        visualizer_cfg=marker_cfg,
+        debug_vis=False,
+        visualizer_cfg=marker_cfg.copy(),
         target_frames=[
             FrameTransformerCfg.FrameCfg(
                 prim_path="{ENV_REGEX_NS}/Robot/ur3e/wrist_3_link",
                 name="end_effector",
                 offset=OffsetCfg(
-                    pos=[0.0, 0.0, 0.13],
-                ),
-            ),
-        ],
-    )
-
-    peg_bottom_frame: FrameTransformerCfg = FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/Peg/Peg",
-        debug_vis=True,
-        visualizer_cfg=marker_cfg,
-        target_frames=[
-            FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/Peg/Peg",
-                name="peg_bottom",
-                offset=OffsetCfg(
-                    pos=[0.0, 0.0, 0.036],
+                    pos=[0.0, 0.0, ROBOTIQ_GRIPPER_CENTER_OFFSET],
                 ),
             ),
         ],
     )
 
     # peg
-    peg: ArticulationCfg = custom_peg.replace(prim_path="/World/envs/env_.*/Peg")
+    peg: ArticulationCfg = MISSING
 
     # hole
-    hole: ArticulationCfg = custom_hole.replace(prim_path="/World/envs/env_.*/Hole")
+    hole: ArticulationCfg = MISSING
 
     # plane
     plane = AssetBaseCfg(
@@ -104,6 +94,8 @@ class AssemblySceneCfg(InteractiveSceneCfg):
         prim_path="/World/light",
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
     )
+
+    peg_bottom_frame: FrameTransformerCfg = MISSING
 
 
 ##
@@ -148,7 +140,6 @@ class ObservationsCfg:
         # observation terms (order preserved)
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
-        # TODO: make this a command
         hole_position = ObsTerm(func=mdp.hole_position_in_robot_root_frame)
         actions = ObsTerm(func=mdp.last_action)
 
@@ -167,8 +158,6 @@ class EventCfg:
     """Configuration for events."""
 
     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
-
-    # TODO: maybe initialize the arm to be above the hole?
 
     reset_peg = EventTerm(func=mdp.reset_peg_in_hand, mode="reset", params={})
 
@@ -273,7 +262,10 @@ class CurriculumCfg:
 @configclass
 class AssemblyEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
-    scene: AssemblySceneCfg = AssemblySceneCfg(num_envs=4096, env_spacing=4.0)
+    scene: AssemblySceneCfg = AssemblySceneCfg(num_envs=4096, env_spacing=2.5)
+    viewer: ViewerCfg = ViewerCfg(
+        eye=(1.0, -0.2, 0.4), origin_type="asset_root", asset_name="robot"
+    )
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()

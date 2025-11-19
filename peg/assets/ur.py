@@ -65,3 +65,5 @@ UR3e_ROBOTIQ_GRIPPER_CFG = ArticulationCfg(
         ),
     },
 )
+
+ROBOTIQ_GRIPPER_CENTER_OFFSET = 0.13  # Offset from gripper base to gripper center along gripper approach axis

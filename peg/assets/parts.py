@@ -1,11 +1,60 @@
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg
+from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
 
 from .. import TASK_DIR
 
 ASSET_DIR = f"{ISAACLAB_NUCLEUS_DIR}/Factory"
 
+
+@configclass
+class PegCfg:
+    usd_path: str = ""
+    diameter: float = 0.0
+    effective_length: float = 0.0
+    total_length: float = 0.0
+
+
+@configclass
+class HoleCfg:
+    usd_path: str = ""
+    diameter: float = 0.0
+    height: float = 0.0
+
+
+@configclass
+class Peg8mm(PegCfg):
+    usd_path: str = f"{ASSET_DIR}/factory_peg_8mm.usd"
+    diameter: float = 0.007986
+    effective_length: float = 0.050
+    total_length: float = 0.050
+
+
+@configclass
+class Hole8mm(HoleCfg):
+    usd_path: str = f"{ASSET_DIR}/factory_hole_8mm.usd"
+    diameter: float = 0.0081
+    height: float = 0.025
+
+
+@configclass
+class CustomPeg(PegCfg):
+    usd_path: str = f"{TASK_DIR}/assets/USD/Peg_v1.usd"
+    diameter: float = 0.0125
+    effective_length: float = 0.016
+    total_length: float = 0.046
+
+
+@configclass
+class CustomHole(HoleCfg):
+    usd_path: str = f"{TASK_DIR}/assets/USD/Hole.usd"
+    diameter: float = 0.013
+    height: float = 0.016
+
+
+CUSTOM_PEG = CustomPeg()
+CUSTOM_HOLE = CustomHole()
 
 factory_peg_8mm = ArticulationCfg(
     prim_path="/World/envs/env_.*/Peg",
@@ -66,7 +115,7 @@ factory_hole_8mm = ArticulationCfg(
 custom_peg = ArticulationCfg(
     prim_path="/World/envs/env_.*/Peg",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{TASK_DIR}/assets/USD/Peg_v1.usd",
+        usd_path=CUSTOM_PEG.usd_path,
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=True,
@@ -94,7 +143,7 @@ custom_peg = ArticulationCfg(
 custom_hole = ArticulationCfg(
     prim_path="/World/envs/env_.*/Hole",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{TASK_DIR}/assets/USD/Hole.usd",
+        usd_path=CUSTOM_HOLE.usd_path,
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -114,7 +163,10 @@ custom_hole = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.3, 0.0, 0.016), rot=(0.0, 1.0, 0.0, 0.0), joint_pos={}, joint_vel={}
+        pos=(0.3, 0.0, CUSTOM_HOLE.height),
+        rot=(0.0, 1.0, 0.0, 0.0),
+        joint_pos={},
+        joint_vel={},
     ),
     actuators={},
 )
