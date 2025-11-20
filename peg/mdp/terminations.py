@@ -1,5 +1,5 @@
 import torch
-from isaaclab.assets import RigidObject
+from isaaclab.assets import Articulation
 from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import FrameTransformer
@@ -16,7 +16,7 @@ def success(
 ) -> torch.Tensor:
     """Reward the agent for successful peg insertion."""
     peg: FrameTransformer = env.scene[peg_cfg.name]
-    hole: RigidObject = env.scene[hole_cfg.name]
+    hole: Articulation = env.scene[hole_cfg.name]
 
     hole_pos_w = hole.data.root_pos_w + torch.tensor(
         hole_offset, device=hole.data.root_pos_w.device
@@ -40,7 +40,7 @@ def peg_dropping(
         ee_frame_cfg: The configuration for the end-effector frame entity.
     ) -> torch.Tensor:
     """
-    peg: RigidObject = env.scene[peg_cfg.name]
+    peg: Articulation = env.scene[peg_cfg.name]
     ee_frame: FrameTransformer = env.scene[ee_frame_cfg.name]
 
     peg_pos_w = peg.data.root_pos_w

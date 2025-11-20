@@ -29,7 +29,7 @@ def peg_insertion_success(
 ) -> torch.Tensor:
     """Reward the agent for successful peg insertion."""
     peg: FrameTransformer = env.scene[peg_cfg.name]
-    hole: RigidObject = env.scene[hole_cfg.name]
+    hole: Articulation = env.scene[hole_cfg.name]
 
     hole_pos_w = hole.data.root_pos_w + torch.tensor(
         hole_offset, device=hole.data.root_pos_w.device
@@ -47,7 +47,7 @@ def position_xy_error(
 ) -> torch.Tensor:
     """Reward the agent for reaching the object using exp-kernel."""
     peg: FrameTransformer = env.scene[peg_cfg.name]
-    hole: RigidObject = env.scene[hole_cfg.name]
+    hole: Articulation = env.scene[hole_cfg.name]
 
     hole_pos_w = hole.data.root_pos_w
     peg_w = peg.data.target_pos_w[:, 0, :]
@@ -72,7 +72,7 @@ def position_z_error(
 ) -> torch.Tensor:
     """Reward the agent for reaching the object using exp-kernel."""
     peg: FrameTransformer = env.scene[peg_cfg.name]
-    hole: RigidObject = env.scene[hole_cfg.name]
+    hole: Articulation = env.scene[hole_cfg.name]
 
     hole_pos_w = hole.data.root_pos_w
     peg_pos_w = peg.data.target_pos_w[:, 0, :]
@@ -111,7 +111,7 @@ def orientation_error(
 ) -> torch.Tensor:
     """Reward the agent for aligning the peg axis with the hole axis."""
     peg: Articulation = env.scene[peg_cfg.name]
-    hole: RigidObject = env.scene[hole_cfg.name]
+    hole: Articulation = env.scene[hole_cfg.name]
     # Peg z-axis in world frame: (num_envs, 3)
     peg_z_w = matrix_from_quat(peg.data.root_quat_w)[:, :, 2]
     # Hole z-axis in world frame: (num_envs, 3)

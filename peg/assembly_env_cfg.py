@@ -6,6 +6,7 @@
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
+from isaaclab.envs.common import ViewerCfg
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
@@ -17,8 +18,7 @@ from isaaclab.markers.config import FRAME_MARKER_CFG
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
-from isaaclab.sim.spawners.from_files.from_files_cfg import (GroundPlaneCfg,
-                                                             UsdFileCfg)
+from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
@@ -30,7 +30,7 @@ from .assets import UR3e_ROBOTIQ_GRIPPER_CFG, custom_hole, custom_peg
 ##
 
 marker_cfg = FRAME_MARKER_CFG.copy()
-marker_cfg.markers["frame"].scale = (0.1, 0.1, 0.1)
+marker_cfg.markers["frame"].scale = (0.05, 0.05, 0.05)
 marker_cfg.prim_path = "/Visuals/FrameTransformer"
 
 
@@ -43,36 +43,6 @@ class AssemblySceneCfg(InteractiveSceneCfg):
     # robot
     robot: ArticulationCfg = UR3e_ROBOTIQ_GRIPPER_CFG.replace(
         prim_path="{ENV_REGEX_NS}/Robot"
-    )
-
-    ee_frame: FrameTransformerCfg = FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/ur3e/base_link",
-        debug_vis=True,
-        visualizer_cfg=marker_cfg,
-        target_frames=[
-            FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/Robot/ur3e/wrist_3_link",
-                name="end_effector",
-                offset=OffsetCfg(
-                    pos=[0.0, 0.0, 0.13],
-                ),
-            ),
-        ],
-    )
-
-    peg_bottom_frame: FrameTransformerCfg = FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/Peg/Peg",
-        debug_vis=True,
-        visualizer_cfg=marker_cfg,
-        target_frames=[
-            FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/Peg/Peg",
-                name="peg_bottom",
-                offset=OffsetCfg(
-                    pos=[0.0, 0.0, 0.036],
-                ),
-            ),
-        ],
     )
 
     # peg
@@ -105,6 +75,37 @@ class AssemblySceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
     )
 
+    # frame transformers
+    ee_frame: FrameTransformerCfg = FrameTransformerCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/ur3e/base_link",
+        debug_vis=False,
+        visualizer_cfg=marker_cfg.copy(),
+        target_frames=[
+            FrameTransformerCfg.FrameCfg(
+                prim_path="{ENV_REGEX_NS}/Robot/ur3e/wrist_3_link",
+                name="end_effector",
+                offset=OffsetCfg(
+                    pos=[0.0, 0.0, 0.13],
+                ),
+            ),
+        ],
+    )
+
+    peg_bottom_frame: FrameTransformerCfg = FrameTransformerCfg(
+        prim_path="{ENV_REGEX_NS}/Peg/Peg",
+        debug_vis=False,
+        visualizer_cfg=marker_cfg.copy(),
+        target_frames=[
+            FrameTransformerCfg.FrameCfg(
+                prim_path="{ENV_REGEX_NS}/Peg/Peg",
+                name="peg_bottom",
+                offset=OffsetCfg(
+                    pos=[0.0, 0.0, 0.036],
+                ),
+            ),
+        ],
+    )
+
 
 ##
 # MDP settings
@@ -132,7 +133,7 @@ class ActionsCfg:
             "wrist_2_joint",
             "wrist_3_joint",
         ],
-        scale=0.5,
+        scale=0.1,
         use_default_offset=True,
     )
 
@@ -148,7 +149,6 @@ class ObservationsCfg:
         # observation terms (order preserved)
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
-        # TODO: make this a command
         hole_position = ObsTerm(func=mdp.hole_position_in_robot_root_frame)
         actions = ObsTerm(func=mdp.last_action)
 
@@ -156,10 +156,17 @@ class ObservationsCfg:
             self.enable_corruption = False
             self.concatenate_terms = True
 
+    @configclass
+    class CriticCfg(PolicyCfg):
+        """Observations for critic group."""
+
+        peg_position = ObsTerm(func=mdp.peg_position_in_robot_root_frame)
+        peg_velocity = ObsTerm(func=mdp.peg_velocity_in_robot_root_frame)
+
     # observation groups
     policy: PolicyCfg = PolicyCfg()
 
-    critic: PolicyCfg = PolicyCfg()
+    critic: PolicyCfg = CriticCfg()
 
 
 @configclass
@@ -215,13 +222,14 @@ class RewardsCfg:
     peg_position_z_tracking = RewTerm(
         func=mdp.position_z_error,
         weight=4.0,
-        params={"std_xy": 0.1, "std_z": 0.2, "std_rz": 0.25, "kernel": "exp"},
+        params={"std_xy": 0.25, "std_z": 0.2, "std_rz": 1.0, "kernel": "exp"},
     )
 
+    # TODO: chage std_rz back to 0.25
     peg_position_z_tracking_fine_grained = RewTerm(
         func=mdp.position_z_error,
         weight=10.0,
-        params={"std_xy": 0.1, "std_z": 0.1, "std_rz": 0.25, "kernel": "tanh"},
+        params={"std_xy": 0.1, "std_z": 0.1, "std_rz": 0.5, "kernel": "tanh"},
     )
 
     task_success_bonus = RewTerm(
@@ -273,7 +281,8 @@ class CurriculumCfg:
 @configclass
 class AssemblyEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
-    scene: AssemblySceneCfg = AssemblySceneCfg(num_envs=4096, env_spacing=4.0)
+    scene: AssemblySceneCfg = AssemblySceneCfg(num_envs=4096, env_spacing=2.5)
+    viewer: ViewerCfg = None
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()

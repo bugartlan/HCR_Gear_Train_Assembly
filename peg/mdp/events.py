@@ -1,3 +1,5 @@
+from re import A
+
 import torch
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.envs import ManagerBasedRLEnv
@@ -22,7 +24,7 @@ def reset_joints_selected(
         target_positions: A dictionary mapping joint names to their target positions.
         asset_cfg: The configuration for the scene entity.
     """
-    robot = env.scene[asset_cfg.name]
+    robot: Articulation = env.scene[asset_cfg.name]
     joint_pos = robot.data.joint_pos.clone()
     target_pos = robot.data.joint_pos.clone()
 
@@ -43,7 +45,7 @@ def reset_peg_in_hand(
     env: ManagerBasedRLEnv,
     env_ids: torch.Tensor,
     tf_pos: list = [0.0, 0.0, 0.0],
-    tf_quat: list = [0.7071, 0.0, 0.0, 0.7071],
+    tf_quat: list = [0.707, 0.0, 0.0, 0.707],
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg"),
     ee_frame_cfg: SceneEntityCfg = SceneEntityCfg("ee_frame"),
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -56,7 +58,7 @@ def reset_peg_in_hand(
         peg_cfg: The configuration for the peg entity.
         asset_cfg: The configuration for the robot entity.
     """
-    peg: RigidObject = env.scene[peg_cfg.name]
+    peg: Articulation = env.scene[peg_cfg.name]
     ee_frame: FrameTransformer = env.scene[ee_frame_cfg.name]
     robot: Articulation = env.scene[robot_cfg.name]
 
@@ -74,5 +76,4 @@ def reset_peg_in_hand(
         ),
     )
     root[:, 7:] = 0.0  # zero velocity
-
     peg.write_root_state_to_sim(root[env_ids], env_ids=env_ids)
