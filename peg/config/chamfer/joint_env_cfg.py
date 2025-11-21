@@ -2,6 +2,8 @@ from isaaclab.markers.config import FRAME_MARKER_CFG
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.utils import configclass
+from isaaclab.envs.common import ViewerCfg
+
 
 from ... import mdp
 from ...assembly_env_cfg import AssemblyEnvCfg
@@ -59,7 +61,7 @@ class ChamferedPegInsertEnvCfg(AssemblyEnvCfg):
             scale=0.1,
             use_default_offset=True,
         )
-        
+
         self.events.reset_peg.params = {
             "tf_pos": [0.0, 0.0, 0.005],
             "tf_quat": [0.707, 0.0, 0.0, 0.707],
@@ -70,14 +72,28 @@ class ChamferedPegInsertEnvCfg(AssemblyEnvCfg):
             "z": (0.0, 0.0),
         }
 
-        self.rewards.task_success_bonus.params["location_threshold"] = 0.0003 # self.hole.height * 0.02
+        self.rewards.task_success_bonus.params["location_threshold"] = (
+            0.0003  # self.hole.height * 0.02
+        )
         self.rewards.task_success_bonus.params["hole_offset"] = [
             0.0,
             0.0,
             -self.hole.height,
         ]
-        self.terminations.success.params["location_threshold"] = 0.0003 # self.hole.height * 0.02
+        self.terminations.success.params["location_threshold"] = (
+            0.0003  # self.hole.height * 0.02
+        )
         self.terminations.success.params["hole_offset"] = [0.0, 0.0, -self.hole.height]
+
+
+@configclass
+class ChamferedPegInsertEnvCfg_VIDEO(ChamferedPegInsertEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+
+        self.viewer = ViewerCfg(
+            eye=(1.0, -0.2, 0.4), origin_type="asset_root", asset_name="robot"
+        )
 
 
 @configclass
