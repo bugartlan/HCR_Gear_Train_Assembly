@@ -15,6 +15,11 @@ We will train two skills for the manipulator
 - Robotiq Hand-E
 
 ### Training 
+- **Train on HCRL servers**: Same command as how you run SO_101, except replacing the task name with
+```bash
+./ray.sh job --task Isaac-Assembly-PegInsert-Chamfer-v0
+```
+
 - **Run training without visualization (headless)**: Use `--num_env 1` for faster startup for quick syntax checks.
 ```bash
 python scripts/reinforcement_learning/rsl_rl/train.py --task Isaac-Assembly-PegInsert-v0 --headless

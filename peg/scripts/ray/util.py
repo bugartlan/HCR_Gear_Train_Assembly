@@ -15,6 +15,7 @@ from datetime import datetime
 from math import isclose
 from time import time
 from typing import Any
+import shutil
 
 import ray
 from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
@@ -117,7 +118,7 @@ class LogExtractionError(Exception):
     pass
 
 
-def run_test_job(identifier_string: str, result_details: list[str]) -> None:
+def run_test_job(identifier_string: str, result_details: list[str] | None = None) -> None:
     import torch
 
     try:
@@ -130,49 +131,110 @@ def run_test_job(identifier_string: str, result_details: list[str]) -> None:
         output = result.stdout.strip().split("\n")
         for gpu_info in output:
             name, memory_free, serial = gpu_info.split(", ")
-            result_details.append(
-                f"{identifier_string}[INFO] Name: {name}|Memory Available: {memory_free} MB|Serial Number {serial} \n"
-            )
+            if result_details:
+                result_details.append(
+                    f"{identifier_string}[INFO] Name: {name}|Memory Available: {memory_free} MB|Serial Number {serial} \n"
+                )
 
         # Get GPU count from PyTorch
         num_gpus_detected = torch.cuda.device_count()
-        result_details.append(f"{identifier_string}[INFO] Detected GPUs from PyTorch: {num_gpus_detected} \n")
+        if result_details:
+            result_details.append(f"{identifier_string}[INFO] Detected GPUs from PyTorch: {num_gpus_detected} \n")
 
         # Check CUDA_VISIBLE_DEVICES and count the number of visible GPUs
         cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
         if cuda_visible_devices:
             visible_devices_count = len(cuda_visible_devices.split(","))
-            result_details.append(
-                f"{identifier_string}[INFO] GPUs visible via CUDA_VISIBLE_DEVICES: {visible_devices_count} \n"
-            )
+            if result_details:
+                result_details.append(
+                    f"{identifier_string}[INFO] GPUs visible via CUDA_VISIBLE_DEVICES: {visible_devices_count} \n"
+                )
         else:
             visible_devices_count = len(output)  # All GPUs visible if CUDA_VISIBLE_DEVICES is not set
-            result_details.append(
-                f"{identifier_string}[INFO] CUDA_VISIBLE_DEVICES not set; all GPUs visible ({visible_devices_count}) \n"
-            )
+            if result_details:
+                result_details.append(
+                    f"{identifier_string}[INFO] CUDA_VISIBLE_DEVICES not set; all GPUs visible ({visible_devices_count}) \n"
+                )
 
         # If PyTorch GPU count disagrees with nvidia-smi, reset CUDA_VISIBLE_DEVICES and rerun detection
         if num_gpus_detected != len(output):
-            result_details.append(
-                f"{identifier_string}[WARN] PyTorch and nvidia-smi disagree on GPU count! Re-running with all"
-                " GPUs visible. \n"
-            )
-            result_details.append(f"{identifier_string}[INFO] This shows that GPU resources were isolated.\n")
+            if result_details:
+                result_details.append(
+                    f"{identifier_string}[WARN] PyTorch and nvidia-smi disagree on GPU count! Re-running with all"
+                    " GPUs visible. \n"
+                )
+                result_details.append(f"{identifier_string}[INFO] This shows that GPU resources were isolated.\n")
             os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(i) for i in range(len(output))])
             num_gpus_detected_after_reset = torch.cuda.device_count()
-            result_details.append(
-                f"{identifier_string}[INFO] After setting CUDA_VISIBLE_DEVICES, PyTorch detects"
-                f" {num_gpus_detected_after_reset} GPUs \n"
-            )
+            if result_details:
+                result_details.append(
+                    f"{identifier_string}[INFO] After setting CUDA_VISIBLE_DEVICES, PyTorch detects"
+                    f" {num_gpus_detected_after_reset} GPUs \n"
+                )
 
     except subprocess.CalledProcessError as e:
         print(f"[ERROR] Error calling nvidia-smi: {e.stderr}")
-        result_details.append("[ERROR] Failed to retrieve GPU information")
+        if result_details:
+            result_details.append("[ERROR] Failed to retrieve GPU information")
+
+
+def mount_files_and_setup(
+    file_mounts: dict[str, str] | None, init_commands: list[str] | None, identifier_string: str = "job 0"
+) -> None:
+    if file_mounts and len(file_mounts):
+        python_packages = [p for p in sys.path if "/py_modules_files/" in p]
+        assert len(python_packages) == len(file_mounts), (
+            "Mismatched length between python_packages and file_mounts -- configuration may be corrupted!"
+        )
+        for p in python_packages:
+            name = os.listdir(p)[0]
+            shutil.copytree(os.path.join(p, name), file_mounts[name], dirs_exist_ok=True)
+        print(f"[INFO] {identifier_string} Created {len(file_mounts)} file mounts.")
+
+        # install dependencies of new modules
+        print(f"[INFO] {identifier_string} Installing external dependencies...")
+        total_installed = 0
+        for mount_point in file_mounts.values():
+            if os.path.exists(os.path.join(mount_point, "setup.py")):
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "--editable",
+                        mount_point,
+                        "--quiet",
+                        "--disable-pip-version-check",
+                        "--root-user-action=ignore",
+                    ]
+                )
+                total_installed += 1
+        print(f"[INFO] {identifier_string} Installed dependencies at {total_installed} mount points.")
+
+    if init_commands:
+        # run other commands for setup
+        print(f"[INFO] {identifier_string} Running init commands: {init_commands}")
+        for cmd in init_commands:
+            subprocess.run(cmd, shell=True)
+
+
+def unmount_files(file_mounts: dict[str, str] | None, identifier_string: str = "job 0") -> None:
+    if file_mounts is None:
+        return
+    for mount_point in file_mounts.values():
+        if os.path.isdir(mount_point):
+            shutil.rmtree(mount_point)
+        else:
+            os.remove(mount_point)
+    print(f"[INFO] {identifier_string} Cleaned up {len(file_mounts)} file mounts.")
 
 
 def execute_job(
-    job_cmd: str,
+    job_cmd: list[str],
     identifier_string: str = "job 0",
+    file_mounts: dict[str, str] | None = None,
+    init_commands: list[str] | None = None,
     test_mode: bool = False,
     extract_experiment: bool = False,
     persistent_dir: str | None = None,
@@ -216,9 +278,10 @@ def execute_job(
         og_dir = os.getcwd()
         os.chdir(persistent_dir)
 
-    process = subprocess.Popen(
-        job_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1
-    )
+    # set up file mounts and run init commands
+    mount_files_and_setup(file_mounts, init_commands)
+
+    process = subprocess.Popen(job_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
 
     if persistent_dir:
         os.chdir(og_dir)
@@ -641,10 +704,12 @@ class Job:
 
     # job command
     cmd: str | None = None
-    py_args: str | None = None
+    py_args: list[str] | None = None
     # identifier string for the job, e.g., "job 0"
     name: str = ""
     # job resources, e.g., {"CPU": 4, "GPU": 1}
+    file_mounts: dict[str, str] | None = None
+    init_commands: list[str] | None = None
     resources: JobResource | None = None
     # specify the node to run the job on, if needed to run on a specific node
     node: JobNode | None = None
@@ -673,12 +738,11 @@ class Job:
 class JobActor:
     """Actor to run job in Ray cluster."""
 
-    def __init__(self, job: Job, test_mode: bool, log_all_output: bool, extract_experiment: bool = False):
+    def __init__(self, job: Job, test_mode: bool):
         self.job = job
         self.test_mode = test_mode
-        self.log_all_output = log_all_output
-        self.extract_experiment = extract_experiment
         self.done = True
+        self.process = None
 
     def ready(self) -> bool:
         """Check if the job is ready to run."""
@@ -686,14 +750,78 @@ class JobActor:
 
     def run(self):
         """Run the job."""
-        cmd = self.job.cmd if self.job.cmd else " ".join([sys.executable, *self.job.py_args.split()])
-        return execute_job(
-            job_cmd=cmd,
-            identifier_string=self.job.name,
-            test_mode=self.test_mode,
-            extract_experiment=self.extract_experiment,
-            log_all_output=self.log_all_output,
+        cmd = [self.job.cmd] if self.job.cmd else [sys.executable]
+        if self.job.py_args:
+            cmd += self.job.py_args
+        try:
+            # set up file mounts and run init commands
+            mount_files_and_setup(self.job.file_mounts, self.job.init_commands, self.job.name)
+            return self._execute_job(
+                job_cmd=cmd,
+                identifier_string=self.job.name,
+            )
+        finally:
+            if self.process and self.process.poll() is None:
+                print(f"[WARN] {self.job.name} Killing job process...")
+                self.process.kill()
+            unmount_files(self.job.file_mounts, self.job.name)
+
+    def _execute_job(self, job_cmd: list[str], identifier_string: str = "job 0") -> None:
+        """Issue a job (shell command).
+
+        Args:
+            job_cmd: The shell command to run.
+            identifier_string: What prefix to add to make logs easier to differentiate
+                across clusters or jobs. Defaults to "job 0".
+            test_mode: When true, only run 'nvidia-smi'. Defaults to False.
+            extract_experiment: When true, search for experiment details from a training run. Defaults to False.
+            persistent_dir: When supplied, change to run the directory in a persistent
+                directory. Can be used to avoid losing logs in the /tmp directory. Defaults to None.
+            log_all_output: When true, print all output to the console. Defaults to False.
+        Raises:
+            ValueError: If the job is unable to start, or throws an error. Most likely to happen
+                due to running out of memory.
+            RuntimeError: If the job is able to run, but throws an error.
+
+        Returns:
+            Relevant information from the job
+        """
+        start_time = datetime.now().strftime("%H:%M:%S.%f")
+
+        # Run nvidia-smi on each node and exit
+        if self.test_mode:
+            run_test_job(identifier_string)
+
+        process = subprocess.Popen(job_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
+
+        def stream_reader(stream, identifier_string, file=sys.stdout, prefix="[INFO] "):
+            for line in iter(stream.readline, ""):
+                print(f"{prefix}{identifier_string}: {line}", end="", file=file)
+
+        # stream stdout and stderr from process
+        stderr_thread = threading.Thread(
+            target=stream_reader,
+            args=(process.stderr, identifier_string),
+            kwargs={"file": sys.stderr, "prefix": "[ERROR] "},
         )
+        stderr_thread.daemon = True
+        stderr_thread.start()
+
+        stdout_thread = threading.Thread(
+            target=stream_reader,
+            args=(process.stdout, identifier_string),
+            kwargs={"file": sys.stdout, "prefix": "[INFO] "},
+        )
+        stdout_thread.daemon = True
+        stdout_thread.start()
+
+        process.wait()
+
+        now = datetime.now().strftime("%H:%M:%S.%f")
+        print(f"\n[INFO] {identifier_string}: Job Started at {start_time}, completed at {now}\n")
+
+        if process.returncode != 0:
+            raise RuntimeError(f"{identifier_string} exited with non-zero status {process.returncode}.")
 
 
 def submit_wrapped_jobs(
@@ -726,7 +854,7 @@ def submit_wrapped_jobs(
         opts = job.to_opt(nodes)
         name = job.name or f"job_{i + 1}"
         print(f"[INFO] Create {name} with opts={opts}")
-        job_actor = JobActor.options(**opts).remote(job, test_mode, log_realtime)
+        job_actor = JobActor.options(**opts).remote(job, test_mode)
         actors.append(job_actor)
     try:
         if concurrent:

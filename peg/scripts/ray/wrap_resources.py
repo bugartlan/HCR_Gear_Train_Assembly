@@ -61,9 +61,10 @@ Usage:
 import argparse
 
 import util
+import json
 
 
-def wrap_resources_to_jobs(jobs: list[str], args: argparse.Namespace) -> None:
+def wrap_resources_to_jobs(jobs: list[str], args: argparse.Namespace, job_args: list[str]) -> None:
     """
     Provided a list of jobs, dispatch jobs to one worker per available node,
     unless otherwise specified by resource constraints.
@@ -96,15 +97,18 @@ def wrap_resources_to_jobs(jobs: list[str], args: argparse.Namespace) -> None:
         "num_workers": args.num_workers,  # By default, 1 worker per node
     }
     args = util.fill_in_missing_resources(args, resources=formatted_node_resources, policy=min)
-    print(f"[INFO]: Number of GPU nodes found: {num_nodes}")
+    print(f"[INFO] Number of GPU nodes found: {num_nodes}")
     if args.test:
         jobs = ["nvidia-smi"] * num_nodes
 
+    file_mounts = json.loads(args.file_mounts)
+    init_commands = json.loads(args.init_commands)
+
     for i, job in enumerate(jobs):
         gpu_node = gpu_node_resources[i % num_nodes]
-        print(f"[INFO]: Creating job {i + 1} of {len(jobs)} with job '{job}' to node {gpu_node}")
+        print(f"[INFO] Creating job {i + 1} of {len(jobs)} with job '{job}' and args {job_args} to node {gpu_node}")
         print(
-            f"[INFO]: Resource parameters: GPU: {args.gpu_per_worker[i]}"
+            f"[INFO] Resource parameters: GPU: {args.gpu_per_worker[i]}"
             f" CPU: {args.cpu_per_worker[i]} RAM {args.ram_gb_per_worker[i]}"
         )
         print(f"[INFO] For the node parameters, creating {args.num_workers[i]} workers")
@@ -113,8 +117,10 @@ def wrap_resources_to_jobs(jobs: list[str], args: argparse.Namespace) -> None:
         # memory = (args.ram_gb_per_worker[i] * 1024**3) / args.num_workers[i]
         job_objs.append(
             util.Job(
-                cmd=job,
+                py_args=[job] + job_args,
                 name=f"Job-{i + 1}",
+                file_mounts=file_mounts,
+                init_commands=init_commands,
                 resources=util.JobResource(num_gpus=args.gpu_per_worker[i], num_cpus=None, memory=None),
                 node=util.JobNode(
                     specific="any",
@@ -149,16 +155,28 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
-        "--sub_jobs",
+        "--file-mounts",
+        type=str,
+        default=None,
+        help=("Dictionary of python modules to mount to specific directories."),
+    )
+    parser.add_argument(
+        "--init-commands",
+        type=str,
+        default=None,
+        help=("List of commands to execute at initialization of the run."),
+    )
+    parser.add_argument(
+        "--sub-jobs",
         type=str,
         nargs=argparse.REMAINDER,
         help="This should be last wrapper argument. Jobs separated by the + delimiter to run on a cluster.",
     )
-    args = parser.parse_args()
+    args, remaining_args = parser.parse_known_args()
     if args.sub_jobs is not None:
         jobs = " ".join(args.sub_jobs)
         formatted_jobs = jobs.split("+")
     else:
         formatted_jobs = []
-    print(f"[INFO]: Isaac Ray Wrapper received jobs {formatted_jobs=}")
-    wrap_resources_to_jobs(jobs=formatted_jobs, args=args)
+    print(f"[INFO] Isaac Ray Wrapper received jobs {formatted_jobs=}")
+    wrap_resources_to_jobs(jobs=formatted_jobs, args=args, job_args=remaining_args)

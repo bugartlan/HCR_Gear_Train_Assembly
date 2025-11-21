@@ -9,7 +9,7 @@ from .utils import is_inserted
 
 def success(
     env: ManagerBasedRLEnv,
-    location_threshold: float = 0.001,
+    location_threshold: float = 0.0001,
     hole_offset: list[float] = [0.0, 0.0, 0.0],
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
     hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
