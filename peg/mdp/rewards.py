@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import torch
 import torch.nn.functional as F
-from isaaclab.assets import Articulation, RigidObject
+from isaaclab.assets import Articulation
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import FrameTransformer
 from isaaclab.utils.math import matrix_from_quat
@@ -51,7 +51,7 @@ def position_xy_error(
 
     hole_pos_w = hole.data.root_pos_w
     peg_w = peg.data.target_pos_w[:, 0, :]
-    error = torch.norm(hole_pos_w[:, :2] - peg_w[:, :2], dim=1)
+    error = torch.sum((hole_pos_w[:, :2] - peg_w[:, :2]).pow(2), dim=1)
 
     if kernel == "tanh":
         return 1 - torch.tanh(error / std**2)
@@ -76,7 +76,7 @@ def position_z_error(
 
     hole_pos_w = hole.data.root_pos_w
     peg_pos_w = peg.data.target_pos_w[:, 0, :]
-    xy_error = torch.norm(hole_pos_w[:, :2] - peg_pos_w[:, :2], dim=1)
+    xy_error = torch.sum((hole_pos_w[:, :2] - peg_pos_w[:, :2]).pow(2), dim=1)
     z_error = hole_pos_w[:, 2] - peg_pos_w[:, 2]
 
     peg_rz_w = matrix_from_quat(peg.data.target_quat_w[:, 0, :])[:, :, 2]

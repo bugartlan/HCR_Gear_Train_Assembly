@@ -111,7 +111,9 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    arm_action: mdp.JointPositionActionCfg | mdp.DifferentialInverseKinematicsActionCfg = MISSING
+    arm_action: (
+        mdp.JointPositionActionCfg | mdp.DifferentialInverseKinematicsActionCfg
+    ) = MISSING
 
 
 @configclass
@@ -149,7 +151,11 @@ class ObservationsCfg:
 class EventCfg:
     """Configuration for events."""
 
-    reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
+    reset_all = EventTerm(
+        func=mdp.reset_scene_to_default,
+        mode="reset",
+        params={"reset_joint_targets": True},
+    )
 
     reset_peg = EventTerm(func=mdp.reset_peg_in_hand, mode="reset", params={})
 
@@ -182,28 +188,31 @@ class RewardsCfg:
     )
 
     peg_orientation_tracking_fine_grained = RewTerm(
-        func=mdp.orientation_error, weight=2.0, params={"std": 0.25, "kernel": "tanh"}
+        func=mdp.orientation_error, weight=2.0, params={"std": 0.5, "kernel": "tanh"}
     )
 
     peg_position_xy_tracking = RewTerm(
-        func=mdp.position_xy_error, weight=1.0, params={"std": 0.25, "kernel": "exp"}
+        func=mdp.position_xy_error, weight=1.0, params={"std": 0.1, "kernel": "exp"}
     )
 
     peg_position_xy_tracking_fine_grained = RewTerm(
-        func=mdp.position_xy_error, weight=2.0, params={"std": 0.1, "kernel": "tanh"}
+        func=mdp.position_xy_error, weight=1.5, params={"std": 0.05, "kernel": "tanh"}
+    )
+
+    peg_position_xy_tracking_super_fine_grained = RewTerm(
+        func=mdp.position_xy_error, weight=2.0, params={"std": 0.008, "kernel": "tanh"}
     )
 
     peg_position_z_tracking = RewTerm(
         func=mdp.position_z_error,
         weight=4.0,
-        params={"std_xy": 0.25, "std_z": 0.2, "std_rz": 1.0, "kernel": "exp"},
+        params={"std_xy": 0.05, "std_z": 0.2, "std_rz": 1.0, "kernel": "exp"},
     )
 
-    # TODO: chage std_rz back to 0.25
     peg_position_z_tracking_fine_grained = RewTerm(
         func=mdp.position_z_error,
         weight=10.0,
-        params={"std_xy": 0.1, "std_z": 0.1, "std_rz": 0.5, "kernel": "tanh"},
+        params={"std_xy": 0.008, "std_z": 0.1, "std_rz": 1.0, "kernel": "tanh"},
     )
 
     task_success_bonus = RewTerm(
@@ -256,7 +265,7 @@ class CurriculumCfg:
 class AssemblyEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
     scene: AssemblySceneCfg = AssemblySceneCfg(num_envs=4096, env_spacing=2.5)
-    viewer: ViewerCfg = None
+    viewer: ViewerCfg | None = None
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()

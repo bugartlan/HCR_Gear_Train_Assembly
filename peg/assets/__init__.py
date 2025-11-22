@@ -8,4 +8,11 @@ __all__ = [
     "custom_hole",
     "factory_peg_8mm",
     "factory_hole_8mm",
+    "CustomHole",
+    "CustomPeg",
+    "Hole8mm",
+    "HoleCfg",
+    "Peg8mm",
+    "PegCfg",
+    "ROBOTIQ_GRIPPER_CENTER_OFFSET"
 ]

@@ -1,3 +1,5 @@
 scripts/local_ray/.env.ray
+scripts/local_ray/job_config.yaml
+scripts/.venv
 __pycache__/
 *.pyc

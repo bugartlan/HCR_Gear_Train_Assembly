@@ -1,9 +1,8 @@
+from isaaclab.envs.common import ViewerCfg
 from isaaclab.markers.config import FRAME_MARKER_CFG
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.utils import configclass
-from isaaclab.envs.common import ViewerCfg
-
 
 from ... import mdp
 from ...assembly_env_cfg import AssemblyEnvCfg
@@ -73,16 +72,14 @@ class ChamferedPegInsertEnvCfg(AssemblyEnvCfg):
         }
 
         self.rewards.task_success_bonus.params["location_threshold"] = (
-            0.0003  # self.hole.height * 0.02
+            self.hole.height * 0.02
         )
         self.rewards.task_success_bonus.params["hole_offset"] = [
             0.0,
             0.0,
             -self.hole.height,
         ]
-        self.terminations.success.params["location_threshold"] = (
-            0.0003  # self.hole.height * 0.02
-        )
+        self.terminations.success.params["location_threshold"] = self.hole.height * 0.02
         self.terminations.success.params["hole_offset"] = [0.0, 0.0, -self.hole.height]
 
 
