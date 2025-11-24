@@ -11,16 +11,20 @@ from isaaclab_rl.rsl_rl import (
     RslRlPpoAlgorithmCfg,
 )
 
+from .... import TASK_DIR
+
 
 @configclass
 class PegInsertPPORunnerCfg(RslRlOnPolicyRunnerCfg):
-    num_steps_per_env = 32
-    max_iterations = 2000
+    num_steps_per_env = 64
+    max_iterations = 3000
     save_interval = 50
     experiment_name = "ur3e_chamfered_peg_insert"
     wandb_project = "UR3e-Chamfered-Peg-Insertion"
     run_name = ""
     logger = "wandb"
+    # resume = False
+    # load_checkpoint = f"{TASK_DIR}/models/model_3999.pt"
     store_code_state = True
     obs_groups = {
         "policy": ["policy"],
@@ -38,7 +42,7 @@ class PegInsertPPORunnerCfg(RslRlOnPolicyRunnerCfg):
         value_loss_coef=1.0,
         use_clipped_value_loss=True,
         clip_param=0.2,
-        entropy_coef=0.0,
+        entropy_coef=0.001,
         num_learning_epochs=4,
         num_mini_batches=32,
         learning_rate=1.0e-3,

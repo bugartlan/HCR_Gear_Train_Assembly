@@ -1,10 +1,9 @@
-from isaaclab.controllers.differential_ik_cfg import \
-    DifferentialIKControllerCfg
-from isaaclab.envs.mdp.actions.actions_cfg import \
-    DifferentialInverseKinematicsActionCfg
+from isaaclab.controllers.differential_ik_cfg import DifferentialIKControllerCfg
+from isaaclab.envs.common import ViewerCfg
+from isaaclab.envs.mdp.actions.actions_cfg import DifferentialInverseKinematicsActionCfg
 from isaaclab.utils import configclass
 
-from ...assets import ROBOTIQ_GRIPPER_CENTER_OFFSET
+from ...assets import ROBOTIQ_GRIPPER_CENTER_OFFSET, UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG
 from . import joint_env_cfg
 
 
@@ -13,7 +12,9 @@ class ChamferedPegInsertEnvCfg(joint_env_cfg.ChamferedPegInsertEnvCfg):
     def __post_init__(self):
         super().__post_init__()
 
-        # TODO: Configure the robot to be extremely stiff
+        self.scene.robot = UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG.replace(
+            prim_path="{ENV_REGEX_NS}/Robot"
+        )
 
         self.actions.arm_action = DifferentialInverseKinematicsActionCfg(
             asset_name="robot",
@@ -32,6 +33,16 @@ class ChamferedPegInsertEnvCfg(joint_env_cfg.ChamferedPegInsertEnvCfg):
             body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(
                 pos=[0.0, 0.0, ROBOTIQ_GRIPPER_CENTER_OFFSET]
             ),
+        )
+
+
+@configclass
+class ChamferedPegInsertEnvCfg_VIDEO(ChamferedPegInsertEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+
+        self.viewer = ViewerCfg(
+            eye=(1.0, 0.0, 0.4), origin_type="asset_root", asset_name="robot"
         )
 
 

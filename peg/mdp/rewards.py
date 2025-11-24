@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import torch
-import torch.nn.functional as F
 from isaaclab.assets import Articulation
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import FrameTransformer
@@ -18,6 +17,39 @@ from .utils import is_inserted
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
+
+
+def peg_keypoints_distance(
+    env: ManagerBasedRLEnv,
+    length: float = 0.016,
+    n_points: int = 5,
+    std: float = 0.001,
+    peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
+    hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
+) -> torch.Tensor:
+    peg: FrameTransformer = env.scene[peg_cfg.name]  # Origin at peg bottom
+    hole: Articulation = env.scene[hole_cfg.name]  # Origin at at hole entry
+
+    peg_keypoints = [
+        peg.data.target_pos_w[:, 0, :]
+        + i
+        * (length / (n_points - 1))
+        * torch.tensor([0.0, 0.0, 1.0], device=peg.data.target_pos_w.device)
+        for i in range(n_points)
+    ][::-1]  # From top to bottom
+    hole_keypoints = [
+        hole.data.root_pos_w
+        + i
+        * (length / (n_points - 1))
+        * torch.tensor([0.0, 0.0, -1.0], device=hole.data.root_pos_w.device)
+        for i in range(n_points)
+    ]
+
+    distances = []
+    for peg_pt, hole_pt in zip(peg_keypoints, hole_keypoints):
+        distances.append(torch.exp(-(peg_pt - hole_pt).pow(2).sum(dim=1) / std**2))
+
+    return torch.stack(distances, dim=0).mean(dim=0)
 
 
 def peg_insertion_success(
@@ -41,7 +73,6 @@ def peg_insertion_success(
 def position_xy_error(
     env: ManagerBasedRLEnv,
     std: float,
-    kernel: str = "exp",
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
     hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
 ) -> torch.Tensor:
@@ -51,14 +82,9 @@ def position_xy_error(
 
     hole_pos_w = hole.data.root_pos_w
     peg_w = peg.data.target_pos_w[:, 0, :]
-    error = torch.sum((hole_pos_w[:, :2] - peg_w[:, :2]).pow(2), dim=1)
+    error = torch.norm(hole_pos_w[:, :2] - peg_w[:, :2], dim=1)
 
-    if kernel == "tanh":
-        return 1 - torch.tanh(error / std**2)
-    elif kernel == "exp":
-        return torch.exp(-error / std**2)
-    else:
-        return F.relu(1 - error / std**2)
+    return torch.exp(-error / std**2)
 
 
 def position_z_error(
@@ -66,7 +92,6 @@ def position_z_error(
     std_xy: float = 1.0,
     std_z: float = 1.0,
     std_rz: float = 1.0,
-    kernel: str = "exp",
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
     hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
 ) -> torch.Tensor:
@@ -81,17 +106,12 @@ def position_z_error(
 
     peg_rz_w = matrix_from_quat(peg.data.target_quat_w[:, 0, :])[:, :, 2]
     hole_rz_w = matrix_from_quat(hole.data.root_quat_w)[:, :, 2]
-    alignment_error = 1 - torch.cosine_similarity(peg_rz_w, hole_rz_w, dim=1).pow(2)
-
-    if kernel == "tanh":
-        reward = 1 - torch.tanh(-z_error / std_z**2)
-    else:
-        reward = torch.exp(z_error / std_z**2)
+    alignment_error = 1 - torch.cosine_similarity(peg_rz_w, hole_rz_w, dim=1)
 
     return (
         torch.exp(-xy_error / std_xy**2)
         * torch.exp(-alignment_error / std_rz**2)
-        * reward
+        * torch.exp(z_error / std_z**2)
     )
 
 
@@ -99,7 +119,6 @@ def orientation_error(
     env: ManagerBasedRLEnv,
     std: float = 1.0,
     sign: float = 1.0,
-    kernel: str = "exp",
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg"),
     hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
 ) -> torch.Tensor:
@@ -111,12 +130,5 @@ def orientation_error(
     # Hole z-axis in world frame: (num_envs, 3)
     hole_z_w = matrix_from_quat(hole.data.root_quat_w)[:, :, 2]
 
-    cos_error = sign * torch.cosine_similarity(peg_z_w, hole_z_w, dim=1)
-    rad_error = torch.acos(cos_error)
-
-    if kernel == "tanh":
-        return 1 - torch.tanh(rad_error.pow(2) / std**2)
-    elif kernel == "exp":
-        return torch.exp(-rad_error.pow(2) / std**2)
-    else:
-        return F.relu(1 - rad_error.pow(2) / std**2)
+    error = 1 - sign * torch.cosine_similarity(peg_z_w, hole_z_w, dim=1)
+    return torch.exp(-error / std**2)

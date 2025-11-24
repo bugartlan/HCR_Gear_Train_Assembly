@@ -9,7 +9,6 @@ from dataclasses import MISSING
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaaclab.envs.common import ViewerCfg
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
@@ -26,7 +25,7 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 from . import mdp
-from .assets import ROBOTIQ_GRIPPER_CENTER_OFFSET, UR3e_ROBOTIQ_GRIPPER_CFG
+from .assets import ROBOTIQ_GRIPPER_CENTER_OFFSET, HoleCfg, PegCfg
 
 ##
 # Scene definition
@@ -42,9 +41,7 @@ class AssemblySceneCfg(InteractiveSceneCfg):
     """Configuration for a cart-pole scene."""
 
     # robot
-    robot: ArticulationCfg = UR3e_ROBOTIQ_GRIPPER_CFG.replace(
-        prim_path="{ENV_REGEX_NS}/Robot"
-    )
+    robot: ArticulationCfg = MISSING
 
     # end effector frame
     ee_frame: FrameTransformerCfg = FrameTransformerCfg(
@@ -127,7 +124,7 @@ class ObservationsCfg:
         # observation terms (order preserved)
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
-        hole_position = ObsTerm(func=mdp.hole_position_in_robot_root_frame)
+        hole_position = ObsTerm(func=mdp.hole_pos_wrt_robot)
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self) -> None:
@@ -138,8 +135,8 @@ class ObservationsCfg:
     class CriticCfg(PolicyCfg):
         """Observations for critic group."""
 
-        peg_position = ObsTerm(func=mdp.peg_position_in_robot_root_frame)
-        peg_velocity = ObsTerm(func=mdp.peg_velocity_in_robot_root_frame)
+        peg_position = ObsTerm(func=mdp.peg_pos_wrt_robot)
+        peg_velocity = ObsTerm(func=mdp.peg_vel_wrt_robot)
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
@@ -183,41 +180,56 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    peg_orientation_tracking = RewTerm(
-        func=mdp.orientation_error, weight=1.0, params={"std": 1.0, "kernel": "tanh"}
+    # peg_orientation_tracking = RewTerm(
+    #     func=mdp.orientation_error, weight=0.5, params={"std": 0.5}
+    # )
+
+    # peg_orientation_tracking_fine_grained = RewTerm(
+    #     func=mdp.orientation_error, weight=1.0, params={"std": 0.2}
+    # )
+
+    # peg_position_xy_tracking = RewTerm(
+    #     func=mdp.position_xy_error, weight=0.5, params={"std": 0.2}
+    # )
+
+    # peg_position_xy_tracking_fine_grained = RewTerm(
+    #     func=mdp.position_xy_error, weight=1.0, params={"std": 0.1}
+    # )
+
+    # peg_position_z_tracking = RewTerm(
+    #     func=mdp.position_z_error,
+    #     weight=0.1,
+    #     params={"std_xy": 0.2, "std_z": 0.3, "std_rz": 0.5},
+    # )
+
+    # peg_position_z_tracking_fine_grained = RewTerm(
+    #     func=mdp.position_z_error,
+    #     weight=0.1,
+    #     params={"std_xy": 0.1, "std_z": 0.1, "std_rz": 0.2},
+    # )
+
+    keypoint_distance_baseline = RewTerm(
+        func=mdp.peg_keypoints_distance,
+        weight=1.0,
+        params={"n_points": 8, "std": 0.05},
     )
 
-    peg_orientation_tracking_fine_grained = RewTerm(
-        func=mdp.orientation_error, weight=2.0, params={"std": 0.5, "kernel": "tanh"}
+    keypoint_distance_coarse = RewTerm(
+        func=mdp.peg_keypoints_distance,
+        weight=1.0,
+        params={"n_points": 8, "std": 0.02},
     )
 
-    peg_position_xy_tracking = RewTerm(
-        func=mdp.position_xy_error, weight=1.0, params={"std": 0.1, "kernel": "exp"}
+    keypoint_distance_fine = RewTerm(
+        func=mdp.peg_keypoints_distance,
+        weight=1.0,
+        params={"n_points": 8, "std": 0.01},
     )
 
-    peg_position_xy_tracking_fine_grained = RewTerm(
-        func=mdp.position_xy_error, weight=1.5, params={"std": 0.05, "kernel": "tanh"}
-    )
-
-    peg_position_xy_tracking_super_fine_grained = RewTerm(
-        func=mdp.position_xy_error, weight=2.0, params={"std": 0.008, "kernel": "tanh"}
-    )
-
-    peg_position_z_tracking = RewTerm(
-        func=mdp.position_z_error,
-        weight=4.0,
-        params={"std_xy": 0.05, "std_z": 0.2, "std_rz": 1.0, "kernel": "exp"},
-    )
-
-    peg_position_z_tracking_fine_grained = RewTerm(
-        func=mdp.position_z_error,
-        weight=10.0,
-        params={"std_xy": 0.008, "std_z": 0.1, "std_rz": 1.0, "kernel": "tanh"},
-    )
-
+    # Maybe add a weak success bonus for halfway insertion?
     task_success_bonus = RewTerm(
         func=mdp.peg_insertion_success,
-        weight=1000.0,
+        weight=200.0,
         params={"location_threshold": 0.0002},
     )
 
@@ -245,14 +257,15 @@ class TerminationsCfg:
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
+    # TODO: change the weights back to 1e-1 after debugging
     action_rate = CurrTerm(
         func=mdp.modify_reward_weight,
-        params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 10000},
+        params={"term_name": "action_rate", "weight": -1e-3, "num_steps": 100000},
     )
 
     joint_vel = CurrTerm(
         func=mdp.modify_reward_weight,
-        params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 10000},
+        params={"term_name": "joint_vel", "weight": -1e-3, "num_steps": 100000},
     )
 
 
@@ -265,7 +278,6 @@ class CurriculumCfg:
 class AssemblyEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
     scene: AssemblySceneCfg = AssemblySceneCfg(num_envs=4096, env_spacing=2.5)
-    viewer: ViewerCfg | None = None
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -281,7 +293,7 @@ class AssemblyEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 5
+        self.episode_length_s = 10.0
         # simulation settings
         self.sim.dt = 1 / 120
         self.sim.render_interval = self.decimation

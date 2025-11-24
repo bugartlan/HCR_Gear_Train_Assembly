@@ -8,20 +8,52 @@ import cli_args  # isort: skip
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
-parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
-parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
-parser.add_argument("--video_interval", type=int, default=12_000, help="Interval between video recordings (in steps).")
-parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
+parser.add_argument(
+    "--video", action="store_true", default=False, help="Record videos during training."
+)
+parser.add_argument(
+    "--video_length",
+    type=int,
+    default=200,
+    help="Length of the recorded video (in steps).",
+)
+parser.add_argument(
+    "--video_interval",
+    type=int,
+    default=12_000,
+    help="Interval between video recordings (in steps).",
+)
+parser.add_argument(
+    "--num_envs", type=int, default=None, help="Number of environments to simulate."
+)
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
-parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
-parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
-parser.add_argument("--estimator", action="store_true", default=False, help="Learn estimator during training.")
+parser.add_argument(
+    "--seed", type=int, default=None, help="Seed used for the environment"
+)
+parser.add_argument(
+    "--max_iterations", type=int, default=None, help="RL Policy training iterations."
+)
+parser.add_argument(
+    "--estimator",
+    action="store_true",
+    default=False,
+    help="Learn estimator during training.",
+)
 parser.add_argument("--probe", action="store_true", default=False, help="Train probes.")
 parser.add_argument("--wandb_run", type=str, default="", help="Run from WandB.")
 parser.add_argument("--wandb_model", type=str, default="", help="Model from WandB.")
-parser.add_argument("--wandb", action="store_true", default=False, help="Select WandB run.")
-parser.add_argument("--server", action="store_true", default=False, help="Train on a headless server.")
-parser.add_argument("--distributed", action="store_true", default=False, help="Train with multiple GPUs.")
+parser.add_argument(
+    "--wandb", action="store_true", default=False, help="Select WandB run."
+)
+parser.add_argument(
+    "--server", action="store_true", default=False, help="Train on a headless server."
+)
+parser.add_argument(
+    "--distributed",
+    action="store_true",
+    default=False,
+    help="Train with multiple GPUs.",
+)
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -32,7 +64,9 @@ args_cli.video = True
 if args_cli.video and args_cli.server:
     args_cli.log_videos_async = True
     args_cli.video = False
-args_cli.wandb = bool(args_cli.wandb or (len(args_cli.wandb_run) and len(args_cli.wandb_model)))
+args_cli.wandb = bool(
+    args_cli.wandb or (len(args_cli.wandb_run) and len(args_cli.wandb_model))
+)
 
 # always enable cameras to record video
 if args_cli.video:
@@ -58,14 +92,12 @@ sys.argv = [sys.argv[0]] + hydra_args
 
 """Rest everything follows."""
 
-import gymnasium as gym
 import os
 import shutil
-import torch
 from datetime import datetime
 
-from robot_rl.runners import DistillationRunner, OnPolicyRunner
-
+import gymnasium as gym
+import torch
 from isaaclab.envs import (
     DirectMARLEnv,
     DirectMARLEnvCfg,
@@ -75,12 +107,12 @@ from isaaclab.envs import (
 )
 from isaaclab.utils.dict import print_dict
 from isaaclab.utils.io import dump_yaml
-
 from isaaclab_rl.rsl_rl import RslRlBaseRunnerCfg, RslRlVecEnvWrapper
 
 # import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils import get_checkpoint_path
 from isaaclab_tasks.utils.hydra import hydra_task_config
+from robot_rl.runners import DistillationRunner, OnPolicyRunner
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -89,12 +121,19 @@ torch.backends.cudnn.benchmark = False
 
 
 @hydra_task_config(args_cli.task, "rsl_rl_cfg_entry_point")
-def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: RslRlBaseRunnerCfg):
+def main(
+    env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg,
+    agent_cfg: RslRlBaseRunnerCfg,
+):
     # override configurations with non-hydra CLI arguments
     agent_cfg = cli_args.update_rsl_rl_cfg(agent_cfg, args_cli)
-    env_cfg.scene.num_envs = args_cli.num_envs if args_cli.num_envs is not None else env_cfg.scene.num_envs
+    env_cfg.scene.num_envs = (
+        args_cli.num_envs if args_cli.num_envs is not None else env_cfg.scene.num_envs
+    )
     agent_cfg.max_iterations = (
-        args_cli.max_iterations if args_cli.max_iterations is not None else agent_cfg.max_iterations
+        args_cli.max_iterations
+        if args_cli.max_iterations is not None
+        else agent_cfg.max_iterations
     )
 
     # multi-gpu training configuration
@@ -110,7 +149,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         # set the environment seed
         # note: certain randomizations occur in the environment initialization so we set the seed here
         env_cfg.seed = agent_cfg.seed
-        env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
+        env_cfg.sim.device = (
+            args_cli.device if args_cli.device is not None else env_cfg.sim.device
+        )
 
     # specify directory for logging experiments
     log_root_path = os.path.abspath(os.path.join("logs", agent_cfg.experiment_name))
@@ -123,7 +164,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     log_dir = os.path.join(log_root_path, log_dir)
 
     # create isaac environment
-    env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
+    env = gym.make(
+        args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None
+    )
 
     # convert to single-agent instance if required by the RL algorithm
     if isinstance(env.unwrapped, DirectMARLEnv):
@@ -132,12 +175,17 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     env_cfg_dict = env_cfg.to_dict()  # type: ignore
     # save resume path before creating a new log_dir
     if agent_cfg.resume or agent_cfg.algorithm.class_name == "Distillation":
-        resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
+        # resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
+        resume_path = agent_cfg.load_checkpoint
     elif args_cli.wandb:
         run_path = cli_args.get_wandb_run_name(args_cli.wandb_run, args_cli.server)
-        model_name = cli_args.get_wandb_model_name(args_cli.wandb_model, args_cli.server)
+        model_name = cli_args.get_wandb_model_name(
+            args_cli.wandb_model, args_cli.server
+        )
         try:
-            resume_path, env_cfg_dict = cli_args.pull_policy_from_wandb(log_root_path, run_path, model_name)
+            resume_path, env_cfg_dict = cli_args.pull_policy_from_wandb(
+                log_root_path, run_path, model_name
+            )
             print("\033[92m\n[INFO] added policy to load\033[0m")
             model_file_name = os.path.splitext(os.path.basename(resume_path))[0]
             model_dir = os.path.join(log_dir, run_path.split("/")[-1])
@@ -177,19 +225,26 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # write git state to logs
     runner.add_git_repo_to_log(__file__)
     # load the checkpoint
-    if agent_cfg.resume or args_cli.wandb or agent_cfg.algorithm.class_name == "Distillation":
+    if (
+        agent_cfg.resume
+        or args_cli.wandb
+        or agent_cfg.algorithm.class_name == "Distillation"
+    ):
         print(f"[INFO]: Loading model checkpoint from: {resume_path}")
-        if isinstance(runner, ProbeRunner):
-            runner.load_actor(resume_path)
-        else:
-            runner.load(resume_path)
+        runner.load(resume_path)
+        # if isinstance(runner, ProbeRunner):
+        #     runner.load_actor(resume_path)
+        # else:
+        #     runner.load(resume_path)
 
     # dump the configuration into log-directory
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg_dict)
     dump_yaml(os.path.join(log_dir, "params", "agent.yaml"), agent_cfg)
 
     # run training
-    runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)
+    runner.learn(
+        num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True
+    )
 
     # close the simulator
     env.close()

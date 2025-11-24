@@ -6,7 +6,13 @@ from isaaclab.utils import configclass
 
 from ... import mdp
 from ...assembly_env_cfg import AssemblyEnvCfg
-from ...assets import CustomHole, CustomPeg, custom_hole, custom_peg
+from ...assets import (
+    CustomHole,
+    CustomPeg,
+    UR3e_ROBOTIQ_GRIPPER_CFG,
+    custom_hole,
+    custom_peg,
+)
 
 
 @configclass
@@ -23,6 +29,10 @@ class ChamferedPegInsertEnvCfg(AssemblyEnvCfg):
         # self.scene.robot.init_state.pos = (0.8, 0.0, 0.0)
         # self.scene.robot.init_state.rot = (0.0, 0.0, 0.0, 1.0)
         # self.scene.hole.init_state.pos = (0.5, 0.0, self.hole.height)
+
+        self.scene.robot = UR3e_ROBOTIQ_GRIPPER_CFG.replace(
+            prim_path="{ENV_REGEX_NS}/Robot"
+        )
 
         self.scene.hole = custom_hole.replace(prim_path="/World/envs/env_.*/Hole")
         self.scene.hole.init_state.pos = (0.3, 0.0, self.hole.height)
@@ -66,20 +76,20 @@ class ChamferedPegInsertEnvCfg(AssemblyEnvCfg):
             "tf_quat": [0.707, 0.0, 0.0, 0.707],
         }
         self.events.reset_hole.params["pose_range"] = {
-            "x": (-0.0, 0.0),
+            "x": (-0.02, 0.02),
             "y": (-0.0, 0.0),
             "z": (0.0, 0.0),
         }
 
         self.rewards.task_success_bonus.params["location_threshold"] = (
-            self.hole.height * 0.02
+            self.hole.height * 0.05
         )
         self.rewards.task_success_bonus.params["hole_offset"] = [
             0.0,
             0.0,
             -self.hole.height,
         ]
-        self.terminations.success.params["location_threshold"] = self.hole.height * 0.02
+        self.terminations.success.params["location_threshold"] = self.hole.height * 0.05
         self.terminations.success.params["hole_offset"] = [0.0, 0.0, -self.hole.height]
 
 

@@ -8,7 +8,7 @@ from .. import TASK_DIR
 
 UR3e_ROBOTIQ_GRIPPER_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{TASK_DIR}/assets/USD/ur3e.usd",
+        usd_path=f"{TASK_DIR}/assets/USD/HCR_ClassRobot.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=True,
             max_depenetration_velocity=5.0,
@@ -58,13 +58,23 @@ UR3e_ROBOTIQ_GRIPPER_CFG = ArticulationCfg(
         ),
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=["Slider_.*"],
-            stiffness=1e6,
-            damping=2e4,
+            effort_limit_sim=10.0,
+            velocity_limit_sim=1.0,
+            stiffness=1e7,
+            damping=1e6,
             friction=0.0,
             armature=0.0,
         ),
     },
 )
+
+UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG = UR3e_ROBOTIQ_GRIPPER_CFG.copy()
+UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG.actuators["shoulder"].stiffness = 1500.0
+UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG.actuators["shoulder"].damping = 200.0
+UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG.actuators["elbow"].stiffness = 800.0
+UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG.actuators["elbow"].damping = 100.0
+UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG.actuators["wrist"].stiffness = 300.0
+UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG.actuators["wrist"].damping = 80.0
 
 ROBOTIQ_GRIPPER_CENTER_OFFSET = (
     0.13  # Offset from gripper base to gripper center along gripper approach axis

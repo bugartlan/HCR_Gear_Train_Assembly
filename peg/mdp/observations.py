@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-def hole_position_in_robot_root_frame(
+def hole_pos_wrt_robot(
     env: ManagerBasedRLEnv,
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
@@ -21,14 +21,16 @@ def hole_position_in_robot_root_frame(
     robot: Articulation = env.scene[robot_cfg.name]
     hole: Articulation = env.scene[hole_cfg.name]
 
-    hole_pos_w = hole.data.root_pos_w[:, :3]
-    hole_pos_b, _ = subtract_frame_transforms(
-        robot.data.root_pos_w, robot.data.root_quat_w, hole_pos_w
+    hole_pos_b, hole_quat_b = subtract_frame_transforms(
+        robot.data.root_pos_w,
+        robot.data.root_quat_w,
+        hole.data.root_pos_w,
+        hole.data.root_quat_w,
     )
     return hole_pos_b
 
 
-def peg_position_in_robot_root_frame(
+def peg_pos_wrt_robot(
     env: ManagerBasedRLEnv,
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
@@ -45,7 +47,7 @@ def peg_position_in_robot_root_frame(
     return torch.cat((peg_pos_b, peg_quat_b), dim=1)
 
 
-def peg_velocity_in_robot_root_frame(
+def peg_vel_wrt_robot(
     env: ManagerBasedRLEnv,
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg"),

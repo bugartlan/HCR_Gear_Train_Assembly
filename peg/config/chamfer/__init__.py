@@ -62,11 +62,44 @@ gym.register(
 )
 
 gym.register(
+    id="Isaac-Assembly-PegInsert-Chamfer-IK-Abs-Video-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.ik_abs_env_cfg:ChamferedPegInsertEnvCfg_VIDEO",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PegInsertPPORunnerCfg",
+    },
+)
+
+gym.register(
     id="Isaac-Assembly-PegInsert-Chamfer-IK-Abs-Play-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.ik_abs_env_cfg:ChamferedPegInsertEnvCfg_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PegInsertPPORunnerCfg",
+    },
+)
+
+##
+# IK Relative Pose Control
+##
+gym.register(
+    id="Isaac-Assembly-PegInsert-Chamfer-IK-Rel-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.ik_rel_env_cfg:ChamferedPegInsertEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PegInsertPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Isaac-Assembly-PegInsert-Chamfer-IK-Rel-Video-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.ik_rel_env_cfg:ChamferedPegInsertEnvCfg_VIDEO",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PegInsertPPORunnerCfg",
     },
 )
