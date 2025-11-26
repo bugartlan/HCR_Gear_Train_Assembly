@@ -25,7 +25,7 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 from . import mdp
-from .assets import ROBOTIQ_GRIPPER_CENTER_OFFSET, HoleCfg, PegCfg
+from .assets import ROBOTIQ_GRIPPER_CENTER_OFFSET
 
 ##
 # Scene definition
@@ -211,13 +211,13 @@ class RewardsCfg:
     keypoint_distance_baseline = RewTerm(
         func=mdp.peg_keypoints_distance,
         weight=1.0,
-        params={"n_points": 8, "std": 0.05},
+        params={"n_points": 8, "std": 0.1},
     )
 
     keypoint_distance_coarse = RewTerm(
         func=mdp.peg_keypoints_distance,
         weight=1.0,
-        params={"n_points": 8, "std": 0.02},
+        params={"n_points": 8, "std": 0.04},
     )
 
     keypoint_distance_fine = RewTerm(
@@ -226,12 +226,13 @@ class RewardsCfg:
         params={"n_points": 8, "std": 0.01},
     )
 
-    # Maybe add a weak success bonus for halfway insertion?
     task_success_bonus = RewTerm(
-        func=mdp.peg_insertion_success,
-        weight=200.0,
-        params={"location_threshold": 0.0002},
+        func=mdp.success_bonus,
+        weight=10.0,
+        params={"std": 0.01, "orientation_threshold": 0.003},
     )
+
+    peg_slip = RewTerm(func=mdp.peg_slip, weight=-10.0, params={"threshold": 0.01})
 
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
 
@@ -248,9 +249,9 @@ class TerminationsCfg:
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
-    peg_dropping = DoneTerm(func=mdp.peg_dropping, params={"threshold": 0.1})
+    peg_dropping = DoneTerm(func=mdp.peg_dropping, params={"threshold": 0.05})
 
-    success = DoneTerm(func=mdp.success, params={"location_threshold": 0.0002})
+    success = DoneTerm(func=mdp.success, params={"location_threshold": 0.001})
 
 
 @configclass

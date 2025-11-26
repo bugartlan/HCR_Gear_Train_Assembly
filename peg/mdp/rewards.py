@@ -13,8 +13,6 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import FrameTransformer
 from isaaclab.utils.math import matrix_from_quat
 
-from .utils import is_inserted
-
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
@@ -52,22 +50,30 @@ def peg_keypoints_distance(
     return torch.stack(distances, dim=0).mean(dim=0)
 
 
-def peg_insertion_success(
+def success_bonus(
     env: ManagerBasedRLEnv,
-    location_threshold: float = 0.001,
-    hole_offset: list[float] = [0.0, 0.0, 0.0],
+    length: float = 0.016,
+    std: float = 0.01,
+    orientation_threshold: float = 0.01,
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
     hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
 ) -> torch.Tensor:
-    """Reward the agent for successful peg insertion."""
+    """Give a bonus reward for successful peg insertion."""
     peg: FrameTransformer = env.scene[peg_cfg.name]
     hole: Articulation = env.scene[hole_cfg.name]
 
-    hole_pos_w = hole.data.root_pos_w + torch.tensor(
-        hole_offset, device=hole.data.root_pos_w.device
+    hole_pos_w = hole.data.root_pos_w
+    hole_rot_z_w = matrix_from_quat(hole.data.root_quat_w)[:, :, 2]
+    peg_pos_w = peg.data.target_pos_w[:, 0, :]
+    peg_rot_z_w = matrix_from_quat(peg.data.target_quat_w[:, 0, :])[:, :, 2]
+
+    alignment = torch.cosine_similarity(peg_rot_z_w, hole_rot_z_w, dim=1).pow(2)
+    distance = peg_pos_w[:, 2] - (hole_pos_w[:, 2] - length)
+    return (
+        alignment.ge(1 - orientation_threshold).float()
+        * distance.le(length).float()
+        * torch.exp(-(distance**2) / std**2)
     )
-    peg_w = peg.data.target_pos_w[:, 0, :]
-    return is_inserted(peg_w, hole_pos_w, threshold=location_threshold).float()
 
 
 def position_xy_error(
@@ -132,3 +138,20 @@ def orientation_error(
 
     error = 1 - sign * torch.cosine_similarity(peg_z_w, hole_z_w, dim=1)
     return torch.exp(-error / std**2)
+
+
+def peg_slip(
+    env: ManagerBasedRLEnv,
+    threshold: float = 0.01,
+    peg_cfg: SceneEntityCfg = SceneEntityCfg("peg"),
+    ee_frame_cfg: SceneEntityCfg = SceneEntityCfg("ee_frame"),
+) -> torch.Tensor:
+    """Penalize the agent if the peg is dropped below a certain height."""
+    peg: Articulation = env.scene[peg_cfg.name]
+    ee_frame: FrameTransformer = env.scene[ee_frame_cfg.name]
+
+    peg_pos_w = peg.data.root_pos_w
+    ee_pos_w = ee_frame.data.target_pos_w[:, 0, :]
+
+    dist = torch.norm(peg_pos_w - ee_pos_w, dim=1)
+    return dist.ge(threshold).float() * dist

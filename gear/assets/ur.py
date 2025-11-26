@@ -60,10 +60,10 @@ UR3e_ROBOTIQ_GRIPPER_CFG = ArticulationCfg(
             joint_names_expr=["Slider_.*"],
             effort_limit_sim=10.0,
             velocity_limit_sim=1.0,
-            stiffness=1e7,
-            damping=1e6,
+            stiffness=1000.0,
+            damping=200.0,
             friction=0.0,
-            armature=0.0,
+            armature=0.05,
         ),
     },
 )

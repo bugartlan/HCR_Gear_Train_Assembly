@@ -157,8 +157,8 @@ class EventCfg:
         func=mdp.reset_joints_selected,
         mode="reset",
         params={
-            "joint_positions": {"Slider_.*": -0.0},
-            "target_positions": {"Slider_.*": -0.015},
+            "joint_positions": {"Slider_.*": -0.008},
+            "target_positions": {"Slider_.*": -0.025},
         },
     )
 
@@ -181,6 +181,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
+    held_asset_dropped = DoneTerm(mdp.held_asset_dropped, params={})
 
 
 @configclass
@@ -222,7 +223,7 @@ class GearMeshEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 1.0
+        self.episode_length_s = 20.0
         # simulation settings
         self.sim.dt = 1 / 120
         self.sim.render_interval = self.decimation

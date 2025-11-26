@@ -82,13 +82,13 @@ class FactoryGearMeshEnvCfg(GearMeshEnvCfg):
                 "wrist_2_joint",
                 "wrist_3_joint",
             ],
-            scale=0.0,
+            scale=0.1,
             use_default_offset=True,
         )
 
         self.events.reset_held_gear.params["tf_pos"] = [
-            -self.held_asset.diameter,
+            -0.02,
             0.0,
-            -self.held_asset.height,
+            -self.held_asset.height + 0.002,
         ]
         self.events.reset_held_gear.params["tf_quat"] = [0.0, 0.0, 0.0, 1.0]
