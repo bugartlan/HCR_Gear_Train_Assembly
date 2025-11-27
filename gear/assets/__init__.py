@@ -3,6 +3,10 @@ from .parts import (
     factory_large_gear_cfg,
     factory_medium_gear_cfg,
     factory_small_gear_cfg,
+    geartrain_gear_base_cfg,
+    geartrain_large_gear_cfg,
+    geartrain_medium_gear_cfg,
+    geartrain_small_gear_cfg,
 )
 from .ur import (
     ROBOTIQ_GRIPPER_CENTER_OFFSET,
@@ -18,4 +22,8 @@ __all__ = [
     "factory_medium_gear_cfg",
     "factory_small_gear_cfg",
     "factory_gear_base_cfg",
+    "geartrain_large_gear_cfg",
+    "geartrain_medium_gear_cfg",
+    "geartrain_small_gear_cfg",
+    "geartrain_gear_base_cfg",
 ]
