@@ -23,6 +23,7 @@ from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+from isaaclab.utils.noise.noise_cfg import GaussianNoiseCfg
 
 from . import mdp
 from .assets import ROBOTIQ_GRIPPER_CENTER_OFFSET
@@ -34,6 +35,18 @@ from .assets import ROBOTIQ_GRIPPER_CENTER_OFFSET
 marker_cfg = FRAME_MARKER_CFG.copy()
 marker_cfg.markers["frame"].scale = (0.05, 0.05, 0.05)
 marker_cfg.prim_path = "/Visuals/FrameTransformer"
+
+
+JOINT_NAMES = [
+    "shoulder_pan_joint",
+    "shoulder_lift_joint",
+    "elbow_joint",
+    "wrist_1_joint",
+    "wrist_2_joint",
+    "wrist_3_joint",
+]
+
+robot_selected_joints = SceneEntityCfg(name="robot", joint_names=JOINT_NAMES)
 
 
 @configclass
@@ -122,13 +135,30 @@ class ObservationsCfg:
         """Observations for policy group."""
 
         # observation terms (order preserved)
-        joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
-        hole_position = ObsTerm(func=mdp.hole_pos_wrt_robot)
+        joint_pos_rel = ObsTerm(
+            func=mdp.joint_pos_rel,
+            params={"asset_cfg": robot_selected_joints},
+            noise=GaussianNoiseCfg(mean=0.0, std=0.01),
+        )
+        joint_vel_rel = ObsTerm(
+            func=mdp.joint_vel_rel,
+            params={"asset_cfg": robot_selected_joints},
+            noise=GaussianNoiseCfg(mean=0.0, std=0.01),
+        )
+        wrench_ee = ObsTerm(
+            func=mdp.body_incoming_wrench,
+            params={
+                "asset_cfg": SceneEntityCfg(name="robot", body_names="wrist_3_link")
+            },
+            noise=GaussianNoiseCfg(mean=0.0, std=0.1),
+        )
+        hole_position = ObsTerm(
+            func=mdp.hole_pos_wrt_robot, noise=GaussianNoiseCfg(mean=0.0, std=0.001)
+        )
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self) -> None:
-            self.enable_corruption = False
+            self.enable_corruption = True
             self.concatenate_terms = True
 
     @configclass
@@ -242,6 +272,18 @@ class RewardsCfg:
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
 
+    joint_acc = RewTerm(
+        func=mdp.joint_acc_l2,
+        weight=-1e-6,
+        params={"asset_cfg": SceneEntityCfg("robot")},
+    )
+
+    joint_torque = RewTerm(
+        func=mdp.joint_torques_l2,
+        weight=-1e-5,
+        params={"asset_cfg": SceneEntityCfg("robot")},
+    )
+
 
 @configclass
 class TerminationsCfg:
@@ -261,12 +303,22 @@ class CurriculumCfg:
     # TODO: change the weights back to 1e-1 after debugging
     action_rate = CurrTerm(
         func=mdp.modify_reward_weight,
-        params={"term_name": "action_rate", "weight": -1e-3, "num_steps": 100000},
+        params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 100000},
     )
 
     joint_vel = CurrTerm(
         func=mdp.modify_reward_weight,
-        params={"term_name": "joint_vel", "weight": -1e-3, "num_steps": 100000},
+        params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 100000},
+    )
+
+    joint_acc = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={"term_name": "joint_acc", "weight": -1e-4, "num_steps": 100000},
+    )
+
+    joint_torque = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={"term_name": "joint_torque", "weight": -1e-2, "num_steps": 100000},
     )
 
 

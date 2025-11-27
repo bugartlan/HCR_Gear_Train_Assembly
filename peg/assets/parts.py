@@ -163,7 +163,7 @@ custom_hole = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.3, 0.0, CUSTOM_HOLE.height),
+        pos=(0.4, 0.0, CUSTOM_HOLE.height),
         rot=(0.0, 1.0, 0.0, 0.0),
         joint_pos={},
         joint_vel={},

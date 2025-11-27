@@ -54,7 +54,7 @@ def success_bonus(
     env: ManagerBasedRLEnv,
     length: float = 0.016,
     std: float = 0.01,
-    orientation_threshold: float = 0.01,
+    translation_xy_threshold: float = 0.001,
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
     hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
 ) -> torch.Tensor:
@@ -63,16 +63,14 @@ def success_bonus(
     hole: Articulation = env.scene[hole_cfg.name]
 
     hole_pos_w = hole.data.root_pos_w
-    hole_rot_z_w = matrix_from_quat(hole.data.root_quat_w)[:, :, 2]
     peg_pos_w = peg.data.target_pos_w[:, 0, :]
-    peg_rot_z_w = matrix_from_quat(peg.data.target_quat_w[:, 0, :])[:, :, 2]
 
-    alignment = torch.cosine_similarity(peg_rot_z_w, hole_rot_z_w, dim=1).pow(2)
-    distance = peg_pos_w[:, 2] - (hole_pos_w[:, 2] - length)
+    xy_distance = torch.norm(hole_pos_w[:, :2] - peg_pos_w[:, :2], dim=1)
+    z_distance = peg_pos_w[:, 2] - (hole_pos_w[:, 2] - length)
     return (
-        alignment.ge(1 - orientation_threshold).float()
-        * distance.le(length).float()
-        * torch.exp(-(distance**2) / std**2)
+        xy_distance.le(translation_xy_threshold).float()
+        * z_distance.le(length).float()
+        * torch.exp(-(z_distance**2) / std**2)
     )
 
 
