@@ -9,10 +9,10 @@ from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
 from ... import mdp
 from ...assets import (
     UR3e_ROBOTIQ_GRIPPER_CFG,
-    factory_gear_base_cfg,
-    factory_large_gear_cfg,
-    factory_medium_gear_cfg,
-    factory_small_gear_cfg,
+    geartrain_gear_base_cfg,
+    geartrain_large_gear_cfg,
+    geartrain_medium_gear_cfg,
+    geartrain_small_gear_cfg,
 )
 from ...gear_env_cfg import GearMeshEnvCfg
 
@@ -56,17 +56,17 @@ class MediumGear(HeldAssetCfg):
 
 
 @configclass
-class FactoryGearMeshEnvCfg(GearMeshEnvCfg):
+class GearTrainGearMeshEnvCfg(GearMeshEnvCfg):
     held_asset: HeldAssetCfg = MediumGear()
     fixed_asset: FixedAssetCfg = GearBase()
 
     def __post_init__(self):
         super().__post_init__()
 
-        self.scene.small_gear = factory_small_gear_cfg
-        self.scene.medium_gear = factory_medium_gear_cfg
-        self.scene.large_gear = factory_large_gear_cfg
-        self.scene.gear_base = factory_gear_base_cfg
+        self.scene.small_gear = geartrain_small_gear_cfg
+        self.scene.medium_gear = geartrain_medium_gear_cfg
+        self.scene.large_gear = geartrain_large_gear_cfg
+        self.scene.gear_base = geartrain_gear_base_cfg
 
         self.scene.robot = UR3e_ROBOTIQ_GRIPPER_CFG.replace(
             prim_path="{ENV_REGEX_NS}/Robot"
@@ -86,9 +86,9 @@ class FactoryGearMeshEnvCfg(GearMeshEnvCfg):
             use_default_offset=True,
         )
 
-        self.events.reset_held_gear.params["tf_pos"] = [
-            -0.02,
-            0.0,
-            -self.held_asset.height + 0.002,
-        ]
-        self.events.reset_held_gear.params["tf_quat"] = [0.0, 0.0, 0.0, 1.0]
+        # self.events.reset_held_gear.params["tf_pos"] = [
+        #     -0.02,
+        #     0.0,
+        #     -self.held_asset.height + 0.002,
+        # ]
+        # self.events.reset_held_gear.params["tf_quat"] = [0.0, 0.0, 0.0, 1.0]

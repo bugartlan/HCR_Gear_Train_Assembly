@@ -45,15 +45,15 @@ class MediumGear(HeldAssetCfg):
     mass = 0.012
 
 
-small_gear_usd = f"{ASSET_DIR}/factory_gear_small.usd"
-medium_gear_usd = f"{ASSET_DIR}/factory_gear_medium.usd"
-large_gear_usd = f"{ASSET_DIR}/factory_gear_large.usd"
-gear_base_usd = f"{ASSET_DIR}/factory_gear_base.usd"
+factory_small_gear_usd = f"{ASSET_DIR}/factory_gear_small.usd"
+factory_medium_gear_usd = f"{ASSET_DIR}/factory_gear_medium.usd"
+factory_large_gear_usd = f"{ASSET_DIR}/factory_gear_large.usd"
+factory_gear_base_usd = f"{ASSET_DIR}/factory_gear_base.usd"
 
 factory_small_gear_cfg: ArticulationCfg = ArticulationCfg(
     prim_path="/World/envs/env_.*/SmallGearAsset",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=small_gear_usd,
+        usd_path=factory_small_gear_usd,
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -81,7 +81,7 @@ factory_small_gear_cfg: ArticulationCfg = ArticulationCfg(
 factory_medium_gear_cfg = ArticulationCfg(
     prim_path="/World/envs/env_.*/HeldAsset",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=medium_gear_usd,
+        usd_path=factory_medium_gear_usd,
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=True,
@@ -110,7 +110,7 @@ factory_medium_gear_cfg = ArticulationCfg(
 factory_large_gear_cfg: ArticulationCfg = ArticulationCfg(
     prim_path="/World/envs/env_.*/LargeGearAsset",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=large_gear_usd,
+        usd_path=factory_large_gear_usd,
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -138,7 +138,124 @@ factory_large_gear_cfg: ArticulationCfg = ArticulationCfg(
 factory_gear_base_cfg = ArticulationCfg(
     prim_path="/World/envs/env_.*/FixedAsset",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=gear_base_usd,
+        usd_path=factory_gear_base_usd,
+        activate_contact_sensors=True,
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=False,
+            max_depenetration_velocity=5.0,
+            linear_damping=0.0,
+            angular_damping=0.0,
+            max_linear_velocity=1000.0,
+            max_angular_velocity=3666.0,
+            enable_gyroscopic_forces=True,
+            solver_position_iteration_count=192,
+            solver_velocity_iteration_count=1,
+            max_contact_impulse=1e32,
+        ),
+        mass_props=sim_utils.MassPropertiesCfg(mass=0.05),
+        collision_props=sim_utils.CollisionPropertiesCfg(
+            contact_offset=0.005, rest_offset=0.0
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.4, 0.0, 0.05), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
+    ),
+    actuators={},
+)
+
+geartrain_small_gear_usd = f"{TASK_DIR}/assets/USD/spur_gear_am_10.usd"
+geartrain_medium_gear_usd = f"{TASK_DIR}/assets/USD/Gear_15.usd"
+geartrain_large_gear_usd = f"{TASK_DIR}/assets/USD/spur_gear_am_30.usd"
+geartrain_gear_base_usd = f"{TASK_DIR}/assets/USD/GearBase.usd"
+
+geartrain_small_gear_cfg: ArticulationCfg = ArticulationCfg(
+    prim_path="/World/envs/env_.*/SmallGearAsset",
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=geartrain_small_gear_usd,
+        activate_contact_sensors=True,
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=False,
+            max_depenetration_velocity=5.0,
+            linear_damping=0.0,
+            angular_damping=0.0,
+            max_linear_velocity=1000.0,
+            max_angular_velocity=3666.0,
+            enable_gyroscopic_forces=True,
+            solver_position_iteration_count=192,
+            solver_velocity_iteration_count=1,
+            max_contact_impulse=1e32,
+        ),
+        mass_props=sim_utils.MassPropertiesCfg(mass=0.019),
+        collision_props=sim_utils.CollisionPropertiesCfg(
+            contact_offset=0.005, rest_offset=0.0
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.4, 0.0, 0.0), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
+    ),
+    actuators={},
+)
+
+geartrain_medium_gear_cfg = ArticulationCfg(
+    prim_path="/World/envs/env_.*/HeldAsset",
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=geartrain_medium_gear_usd,
+        activate_contact_sensors=True,
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=True,
+            max_depenetration_velocity=5.0,
+            linear_damping=0.0,
+            angular_damping=0.0,
+            max_linear_velocity=1000.0,
+            max_angular_velocity=3666.0,
+            enable_gyroscopic_forces=True,
+            solver_position_iteration_count=192,
+            solver_velocity_iteration_count=1,
+            max_contact_impulse=1e32,
+        ),
+        mass_props=sim_utils.MassPropertiesCfg(mass=0.012),
+        collision_props=sim_utils.CollisionPropertiesCfg(
+            contact_offset=0.005, rest_offset=0.0
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.4, 0.1), rot=(0.0, 0.0, 0.0, 1.0), joint_pos={}, joint_vel={}
+    ),
+    actuators={},
+)
+
+geartrain_large_gear_cfg: ArticulationCfg = ArticulationCfg(
+    prim_path="/World/envs/env_.*/LargeGearAsset",
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=geartrain_large_gear_usd,
+        activate_contact_sensors=True,
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=False,
+            max_depenetration_velocity=5.0,
+            linear_damping=0.0,
+            angular_damping=0.0,
+            max_linear_velocity=1000.0,
+            max_angular_velocity=3666.0,
+            enable_gyroscopic_forces=True,
+            solver_position_iteration_count=192,
+            solver_velocity_iteration_count=1,
+            max_contact_impulse=1e32,
+        ),
+        mass_props=sim_utils.MassPropertiesCfg(mass=0.019),
+        collision_props=sim_utils.CollisionPropertiesCfg(
+            contact_offset=0.005, rest_offset=0.0
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.4, 0.0, 0.0), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
+    ),
+    actuators={},
+)
+
+geartrain_gear_base_cfg = ArticulationCfg(
+    prim_path="/World/envs/env_.*/FixedAsset",
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=geartrain_gear_base_usd,
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,

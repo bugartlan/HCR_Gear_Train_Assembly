@@ -151,7 +151,7 @@ class EventCfg:
         params={"reset_joint_targets": True},
     )
     reset_fixed_gears = EventTerm(func=mdp.reset_scene, mode="reset", params={})
-    reset_held_gear = EventTerm(func=mdp.reset_held_gear, mode="reset", params={})
+    # reset_held_gear = EventTerm(func=mdp.reset_held_gear, mode="reset", params={})
 
     close_gripper = EventTerm(
         func=mdp.reset_joints_selected,
