@@ -274,7 +274,7 @@ class RewardsCfg:
 
     joint_acc = RewTerm(
         func=mdp.joint_acc_l2,
-        weight=-1e-6,
+        weight=-1e-5,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
 
@@ -313,12 +313,12 @@ class CurriculumCfg:
 
     joint_acc = CurrTerm(
         func=mdp.modify_reward_weight,
-        params={"term_name": "joint_acc", "weight": -1e-4, "num_steps": 100000},
+        params={"term_name": "joint_acc", "weight": -1e-3, "num_steps": 100000},
     )
 
     joint_torque = CurrTerm(
         func=mdp.modify_reward_weight,
-        params={"term_name": "joint_torque", "weight": -1e-2, "num_steps": 100000},
+        params={"term_name": "joint_torque", "weight": -1e-3, "num_steps": 100000},
     )
 
 
