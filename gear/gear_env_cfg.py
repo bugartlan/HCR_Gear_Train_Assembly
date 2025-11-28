@@ -23,6 +23,7 @@ from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+from isaaclab.utils.noise.noise_cfg import GaussianNoiseCfg
 
 from . import mdp
 from .assets import ROBOTIQ_GRIPPER_CENTER_OFFSET
@@ -34,6 +35,16 @@ from .assets import ROBOTIQ_GRIPPER_CENTER_OFFSET
 marker_cfg = FRAME_MARKER_CFG.copy()
 marker_cfg.markers["frame"].scale = (0.05, 0.05, 0.05)
 marker_cfg.prim_path = "/Visuals/FrameTransformer"
+
+JOINT_NAMES = [
+    "shoulder_pan_joint",
+    "shoulder_lift_joint",
+    "elbow_joint",
+    "wrist_1_joint",
+    "wrist_2_joint",
+    "wrist_3_joint",
+]
+robot_selected_joints = SceneEntityCfg(name="robot", joint_names=JOINT_NAMES)
 
 
 @configclass
@@ -120,8 +131,26 @@ class ObservationsCfg:
         """Observations for policy group."""
 
         # observation terms (order preserved)
-        joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
+        joint_pos_rel = ObsTerm(
+            func=mdp.joint_pos_rel,
+            params={"asset_cfg": robot_selected_joints},
+            noise=GaussianNoiseCfg(mean=0.0, std=0.01),
+        )
+        joint_vel_rel = ObsTerm(
+            func=mdp.joint_vel_rel,
+            params={"asset_cfg": robot_selected_joints},
+            noise=GaussianNoiseCfg(mean=0.0, std=0.01),
+        )
+        wrench_ee = ObsTerm(
+            func=mdp.body_incoming_wrench,
+            params={
+                "asset_cfg": SceneEntityCfg(name="robot", body_names="wrist_3_link")
+            },
+            noise=GaussianNoiseCfg(mean=0.0, std=0.1),
+        )
+        plug_pos = ObsTerm(
+            func=mdp.plug_pos, noise=GaussianNoiseCfg(mean=0.0, std=0.001)
+        )
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self) -> None:
@@ -132,8 +161,8 @@ class ObservationsCfg:
     class CriticCfg(PolicyCfg):
         """Observations for critic group."""
 
-        # gear_position = ObsTerm(func=mdp.gear_pos_wrt_robot)
-        # gear_velocity = ObsTerm(func=mdp.gear_vel_wrt_robot)
+        gear_position = ObsTerm(func=mdp.gear_pos_wrt_robot)
+        gear_velocity = ObsTerm(func=mdp.gear_vel_wrt_robot)
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
@@ -151,13 +180,13 @@ class EventCfg:
         params={"reset_joint_targets": True},
     )
     reset_fixed_gears = EventTerm(func=mdp.reset_scene, mode="reset", params={})
-    # reset_held_gear = EventTerm(func=mdp.reset_held_gear, mode="reset", params={})
+    reset_held_gear = EventTerm(func=mdp.reset_held_gear, mode="reset", params={})
 
     close_gripper = EventTerm(
         func=mdp.reset_joints_selected,
         mode="reset",
         params={
-            "joint_positions": {"Slider_.*": -0.008},
+            "joint_positions": {"Slider_.*": -0.012},
             "target_positions": {"Slider_.*": -0.025},
         },
     )
@@ -167,11 +196,49 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
+    keypoint_distance_baseline = RewTerm(
+        func=mdp.keypoints_distance,
+        weight=1.0,
+        params={"n_points": 8, "std": 0.1},
+    )
+
+    keypoint_distance_coarse = RewTerm(
+        func=mdp.keypoints_distance,
+        weight=1.0,
+        params={"n_points": 8, "std": 0.04},
+    )
+
+    keypoint_distance_fine = RewTerm(
+        func=mdp.keypoints_distance,
+        weight=1.0,
+        params={"n_points": 8, "std": 0.01},
+    )
+
+    task_success_bonus = RewTerm(
+        func=mdp.success_bonus,
+        weight=10.0,
+        params={"std": 0.01},
+    )
+
+    slip = RewTerm(func=mdp.slip, weight=-10.0, params={"threshold": 0.01})
+
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
 
     joint_vel = RewTerm(
         func=mdp.joint_vel_l2,
         weight=-1e-4,
+        params={"asset_cfg": SceneEntityCfg("robot")},
+    )
+
+    joint_acc = RewTerm(
+        func=mdp.joint_acc_l2,
+        weight=-1e-5,
+        params={"asset_cfg": SceneEntityCfg("robot")},
+    )
+
+    joint_torque = RewTerm(
+        func=mdp.joint_torques_l2,
+        weight=-1e-5,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
 
@@ -181,7 +248,8 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    held_asset_dropped = DoneTerm(mdp.held_asset_dropped, params={})
+
+    held_asset_dropped = DoneTerm(mdp.held_asset_dropped, params={"threshold": 0.08})
 
 
 @configclass
@@ -196,6 +264,16 @@ class CurriculumCfg:
     joint_vel = CurrTerm(
         func=mdp.modify_reward_weight,
         params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 100000},
+    )
+
+    joint_acc = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={"term_name": "joint_acc", "weight": -1e-3, "num_steps": 100000},
+    )
+
+    joint_torque = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={"term_name": "joint_torque", "weight": -1e-3, "num_steps": 100000},
     )
 
 

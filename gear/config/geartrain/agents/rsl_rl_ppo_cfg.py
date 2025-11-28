@@ -13,13 +13,13 @@ from isaaclab_rl.rsl_rl import (
 
 @configclass
 class GearMeshPPORunnerCfg(RslRlOnPolicyRunnerCfg):
-    num_steps_per_env = 64
+    num_steps_per_env = 128
     max_iterations = 3000
     save_interval = 50
     experiment_name = "ur_gear_mesh"
-    # wandb_project = "Gear-Mesh"
-    # run_name = ""
-    # logger = "wandb"
+    wandb_project = "Gear-Mesh"
+    run_name = ""
+    logger = "wandb"
     # resume = False
     # load_checkpoint = f"{TASK_DIR}/models/model_3999.pt"
     store_code_state = True

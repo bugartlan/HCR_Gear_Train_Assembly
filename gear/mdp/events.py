@@ -42,6 +42,7 @@ def reset_joints_selected(
 def reset_scene(
     env: ManagerBasedRLEnv,
     env_ids: torch.Tensor,
+    offsets: dict,
     small_gear_cfg: SceneEntityCfg = SceneEntityCfg("small_gear"),
     large_gear_cfg: SceneEntityCfg = SceneEntityCfg("large_gear"),
     gear_base_cfg: SceneEntityCfg = SceneEntityCfg("gear_base"),
@@ -59,10 +60,24 @@ def reset_scene(
     large_gear: Articulation = env.scene[large_gear_cfg.name]
     gear_base: Articulation = env.scene[gear_base_cfg.name]
 
-    fixed_state = gear_base.data.default_root_state.clone()
+    fixed_state = gear_base.data.default_root_state[env_ids].clone()
+    fixed_state[:, :3] += env.scene.env_origins[env_ids]
+
+    small_gear_base_offset = torch.tensor(
+        offsets["small_gear_base_offset"] + [0.0] * 10,
+        device=fixed_state.device,
+    )
+    small_gear_state = fixed_state + small_gear_base_offset
+
+    large_gear_base_offset = torch.tensor(
+        offsets["large_gear_base_offset"] + [0.0] * 10,
+        device=fixed_state.device,
+    )
+    large_gear_state = fixed_state + large_gear_base_offset
+
     gear_base.write_root_state_to_sim(fixed_state, env_ids)
-    small_gear.write_root_state_to_sim(fixed_state, env_ids)
-    large_gear.write_root_state_to_sim(fixed_state, env_ids)
+    small_gear.write_root_state_to_sim(small_gear_state, env_ids)
+    large_gear.write_root_state_to_sim(large_gear_state, env_ids)
 
 
 def reset_held_gear(

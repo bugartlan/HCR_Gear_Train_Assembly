@@ -45,6 +45,24 @@ class MediumGear(HeldAssetCfg):
     mass = 0.012
 
 
+@configclass
+class GearTrainGearBase(FixedAssetCfg):
+    usd_path = f"{TASK_DIR}/assets/USD/GearBase.usd"
+    height = 0.075
+    small_gear_base_offset = [0.0, 0.055, 0.001]
+    medium_gear_base_offset = [0.0, 0.03, 0.001]
+    large_gear_base_offset = [0.0, -0.015, 0.001]
+
+
+@configclass
+class GearTrainMediumGear(HeldAssetCfg):
+    usd_path = f"{TASK_DIR}/assets/USD/Gear_15.usd"
+    diameter = 0.02  # Used for gripper width.
+    height: float = 0.022
+    held_offset: float = 0.005
+    mass = 0.012
+
+
 factory_small_gear_usd = f"{ASSET_DIR}/factory_gear_small.usd"
 factory_medium_gear_usd = f"{ASSET_DIR}/factory_gear_medium.usd"
 factory_large_gear_usd = f"{ASSET_DIR}/factory_gear_large.usd"
@@ -275,7 +293,7 @@ geartrain_gear_base_cfg = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.4, 0.0, 0.05), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
+        pos=(0.4, 0.0, 0.075), rot=(1.0, 0.0, 0.0, 0.0), joint_pos={}, joint_vel={}
     ),
     actuators={},
 )

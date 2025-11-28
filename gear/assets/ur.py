@@ -58,9 +58,9 @@ UR3e_ROBOTIQ_GRIPPER_CFG = ArticulationCfg(
         ),
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=["Slider_.*"],
-            effort_limit_sim=10.0,
+            effort_limit_sim=50.0,
             velocity_limit_sim=1.0,
-            stiffness=1000.0,
+            stiffness=5000.0,
             damping=200.0,
             friction=0.0,
             armature=0.05,
@@ -77,5 +77,5 @@ UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG.actuators["wrist"].stiffness = 300.0
 UR3e_ROBOTIQ_GRIPPER_HIGH_PD_CFG.actuators["wrist"].damping = 80.0
 
 ROBOTIQ_GRIPPER_CENTER_OFFSET = (
-    0.13  # Offset from gripper base to gripper center along gripper approach axis
+    0.14  # Offset from gripper base to gripper center along gripper approach axis
 )

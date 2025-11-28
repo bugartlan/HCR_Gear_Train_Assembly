@@ -1,4 +1,6 @@
 from .parts import (
+    GearTrainGearBase,
+    GearTrainMediumGear,
     factory_gear_base_cfg,
     factory_large_gear_cfg,
     factory_medium_gear_cfg,
@@ -26,4 +28,6 @@ __all__ = [
     "geartrain_medium_gear_cfg",
     "geartrain_small_gear_cfg",
     "geartrain_gear_base_cfg",
+    "GearTrainGearBase",
+    "GearTrainMediumGear",
 ]

@@ -1,6 +1,8 @@
 peg/scripts/local_ray/.env.ray
 peg/scripts/local_ray/job_config.yaml
 peg/scripts/.venv
+scripts/local_ray/.env.ray
+scripts/.venv
 models/
 __pycache__
 *.pyc

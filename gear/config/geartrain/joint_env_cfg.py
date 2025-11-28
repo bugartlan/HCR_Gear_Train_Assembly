@@ -1,13 +1,11 @@
-from isaaclab.assets import ArticulationCfg
 from isaaclab.envs.common import ViewerCfg
-from isaaclab.markers.config import FRAME_MARKER_CFG
-from isaaclab.sensors import FrameTransformerCfg
-from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
 
 from ... import mdp
 from ...assets import (
+    GearTrainGearBase,
+    GearTrainMediumGear,
     UR3e_ROBOTIQ_GRIPPER_CFG,
     geartrain_gear_base_cfg,
     geartrain_large_gear_cfg,
@@ -20,45 +18,9 @@ ASSET_DIR = f"{ISAACLAB_NUCLEUS_DIR}/Factory"
 
 
 @configclass
-class HeldAssetCfg:
-    usd_path: str = ""
-    diameter: float = 0.0
-    height: float = 0.0
-    friction: float = 1.0
-    mass: float = 0.5
-
-
-@configclass
-class FixedAssetCfg:
-    usd_path: str = ""
-    diameter: float = 0.0
-    height: float = 0.0
-    friction: float = 1.0
-    mass: float = 0.05
-
-
-@configclass
-class GearBase(FixedAssetCfg):
-    usd_path = f"{ASSET_DIR}/factory_gear_base.usd"
-    height = 0.02
-    base_height = 0.005
-    small_gear_base_offset = [5.075e-2, 0.0, 0.0]
-    medium_gear_base_offset = [2.025e-2, 0.0, 0.0]
-    large_gear_base_offset = [-3.025e-2, 0.0, 0.0]
-
-
-@configclass
-class MediumGear(HeldAssetCfg):
-    usd_path = f"{ASSET_DIR}/factory_gear_medium.usd"
-    diameter = 0.03  # Used for gripper width.
-    height: float = 0.03
-    mass = 0.012
-
-
-@configclass
 class GearTrainGearMeshEnvCfg(GearMeshEnvCfg):
-    held_asset: HeldAssetCfg = MediumGear()
-    fixed_asset: FixedAssetCfg = GearBase()
+    fixed_asset = GearTrainGearBase()
+    held_asset = GearTrainMediumGear()
 
     def __post_init__(self):
         super().__post_init__()
@@ -86,9 +48,42 @@ class GearTrainGearMeshEnvCfg(GearMeshEnvCfg):
             use_default_offset=True,
         )
 
-        # self.events.reset_held_gear.params["tf_pos"] = [
-        #     -0.02,
-        #     0.0,
-        #     -self.held_asset.height + 0.002,
-        # ]
-        # self.events.reset_held_gear.params["tf_quat"] = [0.0, 0.0, 0.0, 1.0]
+        params = {"offset": self.fixed_asset.medium_gear_base_offset}
+        self.observations.policy.plug_pos.params.update(params)
+        self.observations.critic.plug_pos.params.update(params)
+        params = {
+            "length": self.held_asset.height,
+            "offset": self.fixed_asset.medium_gear_base_offset,
+        }
+        self.rewards.keypoint_distance_baseline.params.update(params)
+        self.rewards.keypoint_distance_coarse.params.update(params)
+        self.rewards.keypoint_distance_fine.params.update(params)
+        self.rewards.task_success_bonus.params.update(params)
+
+        self.rewards
+
+        gear_base_offsets = {
+            "small_gear_base_offset": self.fixed_asset.small_gear_base_offset,
+            "large_gear_base_offset": self.fixed_asset.large_gear_base_offset,
+        }
+        self.events.reset_fixed_gears.params["offsets"] = gear_base_offsets
+        self.events.reset_held_gear.params.update(
+            {
+                "tf_pos": [
+                    0.0,
+                    0.0,
+                    -self.held_asset.height + self.held_asset.held_offset,
+                ],
+                "tf_quat": [1.0, 0.0, 0.0, 0.0],
+            }
+        )
+
+
+@configclass
+class GearTrainGearMeshEnvCfg_VIDEO(GearTrainGearMeshEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+
+        self.viewer = ViewerCfg(
+            eye=(1.0, -0.2, 0.4), origin_type="asset_root", asset_name="robot"
+        )

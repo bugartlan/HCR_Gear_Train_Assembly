@@ -300,7 +300,6 @@ class TerminationsCfg:
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
-    # TODO: change the weights back to 1e-1 after debugging
     action_rate = CurrTerm(
         func=mdp.modify_reward_weight,
         params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 100000},
