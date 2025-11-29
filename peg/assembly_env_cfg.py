@@ -150,7 +150,7 @@ class ObservationsCfg:
             params={
                 "asset_cfg": SceneEntityCfg(name="robot", body_names="wrist_3_link")
             },
-            noise=GaussianNoiseCfg(mean=0.0, std=0.1),
+            noise=GaussianNoiseCfg(mean=0.0, std=0.01),
         )
         hole_position = ObsTerm(
             func=mdp.hole_pos_wrt_robot, noise=GaussianNoiseCfg(mean=0.0, std=0.001)
@@ -239,27 +239,21 @@ class RewardsCfg:
     # )
 
     keypoint_distance_baseline = RewTerm(
-        func=mdp.peg_keypoints_distance,
-        weight=1.0,
-        params={"n_points": 8, "std": 0.1},
+        func=mdp.keypoint_distance, weight=1.0, params={"std": 0.1}
     )
 
     keypoint_distance_coarse = RewTerm(
-        func=mdp.peg_keypoints_distance,
-        weight=1.0,
-        params={"n_points": 8, "std": 0.04},
+        func=mdp.keypoint_distance, weight=1.0, params={"std": 0.04}
     )
 
     keypoint_distance_fine = RewTerm(
-        func=mdp.peg_keypoints_distance,
-        weight=1.0,
-        params={"n_points": 8, "std": 0.01},
+        func=mdp.keypoint_distance, weight=1.0, params={"std": 0.01}
     )
 
     task_success_bonus = RewTerm(
         func=mdp.success_bonus,
         weight=10.0,
-        params={"std": 0.01, "orientation_threshold": 0.003},
+        params={"std": 0.01},
     )
 
     peg_slip = RewTerm(func=mdp.peg_slip, weight=-10.0, params={"threshold": 0.01})
@@ -274,13 +268,13 @@ class RewardsCfg:
 
     joint_acc = RewTerm(
         func=mdp.joint_acc_l2,
-        weight=-1e-5,
+        weight=-1e-6,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
 
     joint_torque = RewTerm(
         func=mdp.joint_torques_l2,
-        weight=-1e-5,
+        weight=-1e-6,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
 

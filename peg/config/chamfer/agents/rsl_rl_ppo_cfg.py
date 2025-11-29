@@ -22,7 +22,7 @@ class PegInsertPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     experiment_name = "ur3e_chamfered_peg_insert"
     wandb_project = "UR3e-Chamfered-Peg-Insertion"
     run_name = ""
-    logger = "wandb"
+    # logger = "wandb"
     # resume = False
     # load_checkpoint = f"{TASK_DIR}/models/model_3999.pt"
     store_code_state = True

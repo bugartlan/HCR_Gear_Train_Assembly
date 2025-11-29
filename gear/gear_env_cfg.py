@@ -196,51 +196,37 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
+    # Keypoint distance rewards
     keypoint_distance_baseline = RewTerm(
-        func=mdp.keypoints_distance,
-        weight=1.0,
-        params={"n_points": 8, "std": 0.1},
+        func=mdp.keypoint_distance, weight=1.0, params={"std": 0.1}
     )
-
     keypoint_distance_coarse = RewTerm(
-        func=mdp.keypoints_distance,
-        weight=1.0,
-        params={"n_points": 8, "std": 0.04},
+        func=mdp.keypoint_distance, weight=1.0, params={"std": 0.04}
     )
-
     keypoint_distance_fine = RewTerm(
-        func=mdp.keypoints_distance,
-        weight=1.0,
-        params={"n_points": 8, "std": 0.01},
+        func=mdp.keypoint_distance, weight=1.0, params={"std": 0.01}
     )
 
-    task_success_bonus = RewTerm(
-        func=mdp.success_bonus,
-        weight=10.0,
-        params={"std": 0.01},
+    # Discrete success bonuses
+    place_success_bonus = RewTerm(func=mdp.discrete_success_bonus, weight=0.1)
+    task_success_bonus = RewTerm(func=mdp.discrete_success_bonus, weight=100.0)
+
+    # Rewards for no slip
+    no_slip_reward = RewTerm(
+        func=mdp.keypoint_distance,
+        weight=1e-2,
+        params={
+            "std": 0.01,
+            "length": 0.01,
+            "quat2": [0.0, -1.0, 0.0, 0.0],
+            "asset1_cfg": SceneEntityCfg("medium_gear"),
+            "asset2_cfg": SceneEntityCfg("ee_frame"),
+        },
     )
-
-    slip = RewTerm(func=mdp.slip, weight=-10.0, params={"threshold": 0.01})
-
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
-
-    joint_vel = RewTerm(
-        func=mdp.joint_vel_l2,
-        weight=-1e-4,
-        params={"asset_cfg": SceneEntityCfg("robot")},
-    )
-
-    joint_acc = RewTerm(
-        func=mdp.joint_acc_l2,
-        weight=-1e-5,
-        params={"asset_cfg": SceneEntityCfg("robot")},
-    )
-
-    joint_torque = RewTerm(
-        func=mdp.joint_torques_l2,
-        weight=-1e-5,
-        params={"asset_cfg": SceneEntityCfg("robot")},
-    )
+    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-1e-4)
+    joint_acc = RewTerm(func=mdp.joint_acc_l2, weight=-1e-5)
+    joint_torque = RewTerm(func=mdp.joint_torques_l2, weight=-1e-5)
 
 
 @configclass
@@ -285,7 +271,7 @@ class CurriculumCfg:
 @configclass
 class GearMeshEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
-    scene: GearMeshSceneCfg = GearMeshSceneCfg(num_envs=4096, env_spacing=2.5)
+    scene: GearMeshSceneCfg = GearMeshSceneCfg(num_envs=1024, env_spacing=2.5)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -301,16 +287,16 @@ class GearMeshEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 20.0
+        self.episode_length_s = 15.0
         # simulation settings
         self.sim.dt = 1 / 120
         self.sim.render_interval = self.decimation
         self.sim.physx.solver_type = 1
-        self.sim.physx.max_position_iteration_count = (
-            192  # Important to avoid interpenetration.
-        )
+        self.sim.physx.max_position_iteration_count = 64
         self.sim.physx.max_velocity_iteration_count = 1
         self.sim.physx.bounce_threshold_velocity = 0.2
+        self.sim.physx.gpu_heap_capacity = 2**28
+        self.sim.physx.gpu_temp_buffer_capacity = 2**27
         self.sim.physx.gpu_max_rigid_contact_count = 2**23
         self.sim.physx.gpu_max_rigid_patch_count = 2**23
         self.sim.physx.gpu_collision_stack_size = 2**30

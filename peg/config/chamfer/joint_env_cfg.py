@@ -35,7 +35,7 @@ class ChamferedPegInsertEnvCfg(AssemblyEnvCfg):
         )
 
         self.scene.hole = custom_hole.replace(prim_path="/World/envs/env_.*/Hole")
-        self.scene.hole.init_state.pos = (0.3, 0.0, self.hole.height)
+        self.scene.hole.init_state.pos = (0.4, 0.0, self.hole.height)
 
         self.scene.peg = custom_peg.replace(prim_path="/World/envs/env_.*/Peg")
 
@@ -81,7 +81,7 @@ class ChamferedPegInsertEnvCfg(AssemblyEnvCfg):
             "z": (0.0, 0.0),
         }
 
-        self.rewards.task_success_bonus.params["length"] = self.hole.height
+        self.rewards.task_success_bonus.params["length"] = self.hole.height + 0.004
 
         self.terminations.success.params["location_threshold"] = self.hole.height * 0.1
         self.terminations.success.params["hole_offset"] = [0.0, 0.0, -self.hole.height]

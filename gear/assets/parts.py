@@ -49,6 +49,7 @@ class MediumGear(HeldAssetCfg):
 class GearTrainGearBase(FixedAssetCfg):
     usd_path = f"{TASK_DIR}/assets/USD/GearBase.usd"
     height = 0.075
+    plug_height = 0.032
     small_gear_base_offset = [0.0, 0.055, 0.001]
     medium_gear_base_offset = [0.0, 0.03, 0.001]
     large_gear_base_offset = [0.0, -0.015, 0.001]
@@ -57,9 +58,9 @@ class GearTrainGearBase(FixedAssetCfg):
 @configclass
 class GearTrainMediumGear(HeldAssetCfg):
     usd_path = f"{TASK_DIR}/assets/USD/Gear_15.usd"
-    diameter = 0.02  # Used for gripper width.
-    height: float = 0.022
-    held_offset: float = 0.005
+    diameter = 0.01921  # Used for gripper width.
+    height: float = 0.02
+    held_length: float = 0.005  # top
     mass = 0.012
 
 
@@ -203,7 +204,7 @@ geartrain_small_gear_cfg: ArticulationCfg = ArticulationCfg(
             solver_velocity_iteration_count=1,
             max_contact_impulse=1e32,
         ),
-        mass_props=sim_utils.MassPropertiesCfg(mass=0.019),
+        mass_props=sim_utils.MassPropertiesCfg(mass=0.19),
         collision_props=sim_utils.CollisionPropertiesCfg(
             contact_offset=0.005, rest_offset=0.0
         ),
@@ -231,7 +232,7 @@ geartrain_medium_gear_cfg = ArticulationCfg(
             solver_velocity_iteration_count=1,
             max_contact_impulse=1e32,
         ),
-        mass_props=sim_utils.MassPropertiesCfg(mass=0.012),
+        mass_props=sim_utils.MassPropertiesCfg(mass=0.12),
         collision_props=sim_utils.CollisionPropertiesCfg(
             contact_offset=0.005, rest_offset=0.0
         ),
@@ -259,7 +260,7 @@ geartrain_large_gear_cfg: ArticulationCfg = ArticulationCfg(
             solver_velocity_iteration_count=1,
             max_contact_impulse=1e32,
         ),
-        mass_props=sim_utils.MassPropertiesCfg(mass=0.019),
+        mass_props=sim_utils.MassPropertiesCfg(mass=0.19),
         collision_props=sim_utils.CollisionPropertiesCfg(
             contact_offset=0.005, rest_offset=0.0
         ),
@@ -287,7 +288,7 @@ geartrain_gear_base_cfg = ArticulationCfg(
             solver_velocity_iteration_count=1,
             max_contact_impulse=1e32,
         ),
-        mass_props=sim_utils.MassPropertiesCfg(mass=0.05),
+        mass_props=sim_utils.MassPropertiesCfg(mass=0.5),
         collision_props=sim_utils.CollisionPropertiesCfg(
             contact_offset=0.005, rest_offset=0.0
         ),
