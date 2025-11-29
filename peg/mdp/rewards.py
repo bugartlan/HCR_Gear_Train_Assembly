@@ -112,9 +112,10 @@ def peg_keypoints_distance(
 
 def success_bonus(
     env: ManagerBasedRLEnv,
-    length: float = 0.016,
     std: float = 0.01,
+    hole_offset: list[float] = [0.0, 0.0, 0.0],
     translation_xy_threshold: float = 0.001,
+    translation_z_threshold: float = 0.001,
     peg_cfg: SceneEntityCfg = SceneEntityCfg("peg_bottom_frame"),
     hole_cfg: SceneEntityCfg = SceneEntityCfg("hole"),
 ) -> torch.Tensor:
@@ -122,14 +123,17 @@ def success_bonus(
     peg: FrameTransformer = env.scene[peg_cfg.name]
     hole: Articulation = env.scene[hole_cfg.name]
 
-    hole_pos_w = hole.data.root_pos_w
+    device = env.device
+    hole_offset_tensor = torch.tensor(hole_offset, device=device)
+
+    hole_pos_w = hole.data.root_pos_w + hole_offset_tensor
     peg_pos_w = peg.data.target_pos_w[:, 0, :]
 
     xy_distance = torch.norm(hole_pos_w[:, :2] - peg_pos_w[:, :2], dim=1)
-    z_distance = peg_pos_w[:, 2] - (hole_pos_w[:, 2] - length)
+    z_distance = peg_pos_w[:, 2] - hole_pos_w[:, 2]
     return (
         xy_distance.le(translation_xy_threshold).float()
-        * z_distance.le(length).float()
+        * z_distance.le(translation_z_threshold).float()
         * torch.exp(-(z_distance**2) / std**2)
     )
 

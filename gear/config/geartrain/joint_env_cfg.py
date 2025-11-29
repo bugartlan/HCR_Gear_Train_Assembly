@@ -57,9 +57,20 @@ class GearTrainGearMeshEnvCfg(GearMeshEnvCfg):
         self.rewards.place_success_bonus.params.update(params)
         params = {
             "length": self.held_asset.height,
+            "offset2": list(
+                map(
+                    lambda x, y: x + y,
+                    self.fixed_asset.medium_gear_base_offset,
+                    [0, 0, self.fixed_asset.plug_height],
+                )
+            ),
+        }
+        self.rewards.keypoint_distance_above_coarse.params.update(params)
+        self.rewards.keypoint_distance_above_fine.params.update(params)
+        params = {
+            "length": self.held_asset.height,
             "offset2": self.fixed_asset.medium_gear_base_offset,
         }
-        self.rewards.keypoint_distance_baseline.params.update(params)
         self.rewards.keypoint_distance_coarse.params.update(params)
         self.rewards.keypoint_distance_fine.params.update(params)
         held_position_dz = -self.held_asset.height + self.held_asset.held_length

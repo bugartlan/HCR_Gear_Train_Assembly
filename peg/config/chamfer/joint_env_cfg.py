@@ -81,7 +81,16 @@ class ChamferedPegInsertEnvCfg(AssemblyEnvCfg):
             "z": (0.0, 0.0),
         }
 
-        self.rewards.task_success_bonus.params["length"] = self.hole.height + 0.004
+        params = {"offset2": [0.0, 0.0, -self.hole.height]}
+        self.rewards.keypoint_distance_baseline.params.update(params)
+        self.rewards.keypoint_distance_coarse.params.update(params)
+        self.rewards.keypoint_distance_fine.params.update(params)
+        self.rewards.task_success_bonus.params.update(
+            {
+                "hole_offset": [0.0, 0.0, -self.hole.height],
+                "translation_z_threshold": self.hole.height + 0.005,
+            }
+        )
 
         self.terminations.success.params["location_threshold"] = self.hole.height * 0.1
         self.terminations.success.params["hole_offset"] = [0.0, 0.0, -self.hole.height]

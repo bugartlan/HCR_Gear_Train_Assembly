@@ -197,24 +197,31 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     # Keypoint distance rewards
-    keypoint_distance_baseline = RewTerm(
+    keypoint_distance_above_coarse = RewTerm(
         func=mdp.keypoint_distance, weight=1.0, params={"std": 0.1}
     )
+    keypoint_distance_above_fine = RewTerm(
+        func=mdp.keypoint_distance, weight=1.0, params={"std": 0.05}
+    )
     keypoint_distance_coarse = RewTerm(
-        func=mdp.keypoint_distance, weight=1.0, params={"std": 0.04}
+        func=mdp.keypoint_distance, weight=0.1, params={"std": 0.04}
     )
     keypoint_distance_fine = RewTerm(
-        func=mdp.keypoint_distance, weight=1.0, params={"std": 0.01}
+        func=mdp.keypoint_distance, weight=0.1, params={"std": 0.01}
     )
 
     # Discrete success bonuses
-    place_success_bonus = RewTerm(func=mdp.discrete_success_bonus, weight=0.1)
+    place_success_bonus = RewTerm(
+        func=mdp.discrete_success_bonus,
+        weight=1.0,
+        params={"trans_z_threshold": 1, "trans_xy_threshold": 0.002},
+    )
     task_success_bonus = RewTerm(func=mdp.discrete_success_bonus, weight=100.0)
 
     # Rewards for no slip
     no_slip_reward = RewTerm(
         func=mdp.keypoint_distance,
-        weight=1e-2,
+        weight=0.1,
         params={
             "std": 0.01,
             "length": 0.01,
@@ -225,8 +232,8 @@ class RewardsCfg:
     )
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
     joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-1e-4)
-    joint_acc = RewTerm(func=mdp.joint_acc_l2, weight=-1e-5)
-    joint_torque = RewTerm(func=mdp.joint_torques_l2, weight=-1e-5)
+    joint_acc = RewTerm(func=mdp.joint_acc_l2, weight=-1e-6)
+    joint_torque = RewTerm(func=mdp.joint_torques_l2, weight=-1e-6)
 
 
 @configclass
@@ -260,6 +267,42 @@ class CurriculumCfg:
     joint_torque = CurrTerm(
         func=mdp.modify_reward_weight,
         params={"term_name": "joint_torque", "weight": -1e-3, "num_steps": 100000},
+    )
+
+    keypoint_distance_above_coarse = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={
+            "term_name": "keypoint_distance_above_coarse",
+            "weight": 0.0,
+            "num_steps": 10000,
+        },
+    )
+
+    keypoint_distance_above_fine = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={
+            "term_name": "keypoint_distance_above_fine",
+            "weight": 0.0,
+            "num_steps": 10000,
+        },
+    )
+
+    keypoint_distance_coarse = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={
+            "term_name": "keypoint_distance_coarse",
+            "weight": 1.0,
+            "num_steps": 10000,
+        },
+    )
+
+    keypoint_distance_fine = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={
+            "term_name": "keypoint_distance_fine",
+            "weight": 1.0,
+            "num_steps": 10000,
+        },
     )
 
 
