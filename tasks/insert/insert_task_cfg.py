@@ -120,3 +120,5 @@ class InsertEnvCfg(AssemblyEnvCfg):
         self.rewards.keypoint_distance_coarse.params["length"] = HoleSpec.height
         self.rewards.keypoint_distance_fine.params["length"] = HoleSpec.height
         self.rewards.task_success_bonus.params["length"] = HoleSpec.height
+        self.rewards.slip.params["length"] = PegSpec.total_length
+        self.terminations.dropped.params["length"] = PegSpec.total_length

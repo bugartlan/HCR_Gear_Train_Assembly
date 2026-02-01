@@ -192,7 +192,7 @@ class EventCfg:
         params={"reset_joint_targets": True},
     )
 
-    reset_peg = EventTerm(func=mdp.reset_peg_in_hand, mode="reset", params={})
+    reset_peg = EventTerm(func=mdp.reset_held_asset, mode="reset", params={})
 
     close_gripper = EventTerm(
         func=mdp.reset_joints_selected,
@@ -231,7 +231,7 @@ class RewardsCfg:
     task_success_bonus = RewTerm(
         func=mdp.success_bonus, weight=10.0, params={"threshold": 0.01}
     )
-    peg_slip = RewTerm(
+    slip = RewTerm(
         func=mdp.keypoint_dist_reward,
         weight=0.5,
         params={

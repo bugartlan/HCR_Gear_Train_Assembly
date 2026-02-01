@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 def fixed_asset_pos_wrt_robot(
     env: ManagerBasedRLEnv,
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    fixed_asset_cfg: SceneEntityCfg = SceneEntityCfg("target"),
+    fixed_asset_cfg: SceneEntityCfg = SceneEntityCfg("target_frame"),
 ) -> torch.Tensor:
     robot: Articulation = env.scene[robot_cfg.name]
     fixed_asset: FrameTransformer = env.scene[fixed_asset_cfg.name]
